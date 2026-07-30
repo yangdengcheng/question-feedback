@@ -123,7 +123,7 @@
 
       <!-- 工单流转记录 -->
       <div v-if="ticket.logs && ticket.logs.length > 0" class="panel p-6 mb-6">
-        <h2 class="text-base font-semibold text-slate-200 mb-4">流转记录</h2>
+        <h2 class="panel-title text-base font-semibold text-slate-200 mb-4">流转记录</h2>
         <el-timeline>
           <el-timeline-item v-for="log in ticket.logs" :key="log.id" :timestamp="formatTime(log.createdAt)"
             placement="top" :type="logActionColor(log.action)">
@@ -153,24 +153,39 @@
 
       <!-- 讨论区 -->
       <div class="panel p-6">
-        <h2 class="text-base font-semibold text-slate-200 mb-6">讨论记录</h2>
+        <h2 class="panel-title text-base font-semibold text-slate-200 mb-6">
+          讨论记录
+          <span v-if="newCommentTip"
+            class="ml-2 align-middle inline-flex items-center gap-1 text-xs font-medium text-primary">
+            <i class="w-1.5 h-1.5 rounded-full bg-primary pulse-dot" />有新评论
+          </span>
+        </h2>
 
-        <div v-if="comments.length === 0" class="text-center py-10">
-          <p class="text-slate-500 text-sm">暂无讨论，发表第一条评论吧</p>
+        <div v-if="comments.length === 0" class="flex flex-col items-center justify-center py-12 text-center">
+          <div
+            class="w-14 h-14 rounded-full border border-dashed border-line-strong flex items-center justify-center bg-ink/40">
+            <el-icon :size="26" class="text-slate-600"><ChatDotRound /></el-icon>
+          </div>
+          <p class="text-sm text-slate-400 mt-4">暂无讨论</p>
+          <p class="text-xs text-slate-600 mt-1">在下方发表第一条评论，开启对话</p>
         </div>
 
         <div v-else class="space-y-6">
           <CommentItem v-for="comment in comments" :key="comment.id" :comment="comment" />
         </div>
 
-        <!-- 评论输入区 -->
+        <!-- 评论撰写器 -->
         <div class="mt-8 pt-6 border-t border-line">
-          <el-input v-model="newComment" type="textarea" :rows="3" placeholder="输入您的评论..." class="mb-3" />
-          <div class="flex items-center justify-between">
-            <FileUpload ref="commentFileUploadRef" />
-            <button class="btn-accent px-6 py-2 ml-4 shrink-0" :disabled="!newComment.trim() || submitting"
-              @click="submitComment">
-              {{ submitting ? "发送中..." : "发送" }}
+          <el-input v-model="newComment" type="textarea" :rows="3" placeholder="输入您的评论，支持 Ctrl+V 粘贴截图…" />
+          <div class="flex items-start justify-between gap-3 mt-3">
+            <div class="flex items-center gap-3 min-w-0">
+              <FileUpload compact ref="commentFileUploadRef" />
+              <span class="text-xs text-slate-600 hidden sm:inline">可拖拽 / 粘贴图片</span>
+            </div>
+            <button class="btn-accent shrink-0" :disabled="!newComment.trim() || submitting" @click="submitComment">
+              <el-icon v-if="!submitting"><Promotion /></el-icon>
+              <el-icon v-else class="is-loading"><Loading /></el-icon>
+              {{ submitting ? "发送中" : "发送" }}
             </button>
           </div>
         </div>
@@ -207,7 +222,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from "vue";
+import { ref, computed, onMounted, onUnmounted } from "vue";
 import { useRoute } from "vue-router";
 import { ElMessage } from "element-plus";
 import { getTicketDetail, updateTicketStatus, transferTicket, listComments, createComment, listAssignees } from "../api/tickets";
@@ -302,10 +317,52 @@ function formatTime(time) {
   return `${d.getFullYear()}/${d.getMonth() + 1}/${d.getDate()} ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
 }
 
+// 详情页实时轮询：停留时自动刷新讨论区与工单状态，新评论页面内提示
+const newCommentTip = ref(false);
+let detailTimer = null;
+let tipTimer = null;
+
+async function pollComments() {
+  try {
+    const list = await listComments(route.params.id);
+    const oldIds = new Set(comments.value.map(c => c.id));
+    const fresh = (list || []).filter(c => !oldIds.has(c.id));
+    comments.value = list || [];
+    const fromOthers = fresh.filter(c => c.userId !== authStore.user?.id);
+    if (fromOthers.length && document.visibilityState === "visible") {
+      newCommentTip.value = true;
+      if (tipTimer) clearTimeout(tipTimer);
+      tipTimer = setTimeout(() => { newCommentTip.value = false; }, 6000);
+    }
+  } catch (e) { /* silent */ }
+}
+
+async function silentRefreshTicket() {
+  try { ticket.value = await getTicketDetail(route.params.id); } catch (e) { /* silent */ }
+}
+
+function startDetailPolling() {
+  stopDetailPolling();
+  detailTimer = setInterval(() => {
+    pollComments();
+    silentRefreshTicket();
+  }, 10000);
+}
+
+function stopDetailPolling() {
+  if (detailTimer) { clearInterval(detailTimer); detailTimer = null; }
+}
+
 onMounted(() => {
   fetchTicket();
   fetchComments();
   if (isInternal.value) fetchInternalUsers();
+  startDetailPolling();
+});
+
+onUnmounted(() => {
+  stopDetailPolling();
+  if (tipTimer) clearTimeout(tipTimer);
 });
 
 async function fetchTicket() {

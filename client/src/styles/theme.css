@@ -199,9 +199,13 @@ code, kbd, pre, samp {
 .btn-accent:active {
   transform: translateY(1px);
 }
-.btn-accent:disabled {
-  opacity: 0.5;
+.btn-accent:disabled,
+.btn-accent:disabled:hover {
+  background: rgba(148, 163, 184, 0.12);
+  color: var(--text-3);
+  box-shadow: none;
   cursor: not-allowed;
+  transform: none;
 }
 
 .btn-ghost {

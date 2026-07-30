@@ -1,39 +1,66 @@
 <template>
-  <div class="outline-none">
-    <el-upload drag :auto-upload="false" :show-file-list="false" :accept="acceptTypes" multiple
-      :on-change="handleFileSelect">
-      <el-icon class="el-icon--upload text-primary" :size="40">
-        <UploadFilled />
-      </el-icon>
-      <div class="el-upload__text text-slate-400">
-        拖拽文件到此处，或 <em class="text-primary">点击选择</em>，或 <em class="text-st-processing">Ctrl+V 粘贴截图</em>
-      </div>
-      <template #tip>
-        <div class="el-upload__tip text-slate-500">
-          支持 jpg/png/gif/mp4/pdf/doc/docx/xls/xlsx/zip/rar，单文件不超过 10MB。文件将在提交时上传。
-        </div>
-      </template>
-    </el-upload>
+  <div class="outline-none" :class="{ 'fu-compact': compact }">
+    <!-- 紧凑模式：评论区等轻量场景，仅一个附件按钮 + 横向 chip -->
+    <template v-if="compact">
+      <el-upload :auto-upload="false" :show-file-list="false" :accept="acceptTypes" multiple
+        :on-change="handleFileSelect">
+        <button type="button" class="btn-ghost fu-attach">
+          <el-icon><Paperclip /></el-icon>
+          附件
+          <span v-if="fileList.length" class="tnum fu-attach__count">{{ fileList.length }}</span>
+        </button>
+      </el-upload>
 
-    <div v-if="fileList.length > 0" class="mt-3 space-y-2">
-      <div v-for="file in fileList" :key="file.uid"
-        class="flex items-center justify-between panel px-4 py-2 rounded-lg">
-        <div class="flex items-center gap-3 min-w-0">
-          <img v-if="file.previewUrl" :src="file.previewUrl"
-            class="w-10 h-10 rounded object-cover shrink-0 cursor-pointer hover:opacity-80 transition-opacity"
-            @click="openPreview(fileList.indexOf(file))"
-          />
-          <el-icon v-else :size="20" class="text-slate-400 shrink-0"><Document /></el-icon>
-          <span class="text-sm text-slate-300 truncate">{{ file.name }}</span>
-          <span class="text-xs text-slate-500">{{ formatSize(file.size) }}</span>
-          <el-tag v-if="file.uploaded" type="success" size="small" effect="plain">已上传</el-tag>
-          <el-tag v-else type="info" size="small" effect="plain">待上传</el-tag>
-        </div>
-        <el-button type="danger" text size="small" @click="removeFile(file.uid)">
-          <el-icon><Delete /></el-icon>
-        </el-button>
+      <div v-if="fileList.length > 0" class="fu-chips">
+        <span v-for="file in fileList" :key="file.uid" class="fu-chip">
+          <img v-if="file.previewUrl" :src="file.previewUrl" class="fu-chip__thumb"
+            @click="openPreview(fileList.indexOf(file))" />
+          <el-icon v-else :size="13" class="text-slate-400 shrink-0"><Document /></el-icon>
+          <span class="fu-chip__name">{{ file.name }}</span>
+          <button type="button" class="fu-chip__x" @click="removeFile(file.uid)" aria-label="移除附件">
+            <el-icon :size="12"><Close /></el-icon>
+          </button>
+        </span>
       </div>
-    </div>
+    </template>
+
+    <!-- 默认模式：拖拽上传 -->
+    <template v-else>
+      <el-upload drag :auto-upload="false" :show-file-list="false" :accept="acceptTypes" multiple
+        :on-change="handleFileSelect">
+        <el-icon class="el-icon--upload text-primary" :size="40">
+          <UploadFilled />
+        </el-icon>
+        <div class="el-upload__text text-slate-400">
+          拖拽文件到此处，或 <em class="text-primary">点击选择</em>，或 <em class="text-st-processing">Ctrl+V 粘贴截图</em>
+        </div>
+        <template #tip>
+          <div class="el-upload__tip text-slate-500">
+            支持 jpg/png/gif/mp4/pdf/doc/docx/xls/xlsx/zip/rar，单文件不超过 10MB。文件将在提交时上传。
+          </div>
+        </template>
+      </el-upload>
+
+      <div v-if="fileList.length > 0" class="mt-3 space-y-2">
+        <div v-for="file in fileList" :key="file.uid"
+          class="flex items-center justify-between panel px-4 py-2 rounded-lg">
+          <div class="flex items-center gap-3 min-w-0">
+            <img v-if="file.previewUrl" :src="file.previewUrl"
+              class="w-10 h-10 rounded object-cover shrink-0 cursor-pointer hover:opacity-80 transition-opacity"
+              @click="openPreview(fileList.indexOf(file))"
+            />
+            <el-icon v-else :size="20" class="text-slate-400 shrink-0"><Document /></el-icon>
+            <span class="text-sm text-slate-300 truncate">{{ file.name }}</span>
+            <span class="text-xs text-slate-500">{{ formatSize(file.size) }}</span>
+            <el-tag v-if="file.uploaded" type="success" size="small" effect="plain">已上传</el-tag>
+            <el-tag v-else type="info" size="small" effect="plain">待上传</el-tag>
+          </div>
+          <el-button type="danger" text size="small" @click="removeFile(file.uid)">
+            <el-icon><Delete /></el-icon>
+          </el-button>
+        </div>
+      </div>
+    </template>
 
     <ImageViewer v-model:visible="previewVisible" :images="previewImages" :initial-index="previewIndex" />
   </div>
@@ -73,6 +100,10 @@ import { ref, computed, onMounted, onUnmounted } from "vue";
 import { ElMessage } from "element-plus";
 import request from "../api/request";
 import ImageViewer from "./ImageViewer.vue";
+
+defineProps({
+  compact: { type: Boolean, default: false },
+});
 
 const MAX_SIZE = 10 * 1024 * 1024;
 const acceptTypes = ".jpg,.jpeg,.png,.gif,.mp4,.pdf,.doc,.docx,.xls,.xlsx,.zip,.rar";
@@ -195,3 +226,76 @@ onUnmounted(() => {
   fileList.value.forEach((f) => { if (f.previewUrl) URL.revokeObjectURL(f.previewUrl); });
 });
 </script>
+
+<style scoped>
+.fu-attach {
+  height: 32px;
+  padding: 0 12px;
+}
+.fu-attach__count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  margin-left: 2px;
+  border-radius: 8px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 11px;
+  font-weight: 700;
+}
+.fu-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+.fu-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 200px;
+  height: 26px;
+  padding: 0 4px 0 8px;
+  border: 1px solid var(--line-strong);
+  border-radius: 4px;
+  background: rgba(11, 17, 32, 0.5);
+  font-size: 12px;
+  color: var(--text-2);
+  transition: border-color 0.15s ease;
+}
+.fu-chip:hover {
+  border-color: rgba(148, 163, 184, 0.35);
+}
+.fu-chip__thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 3px;
+  object-fit: cover;
+  cursor: pointer;
+}
+.fu-chip__name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.fu-chip__x {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border: none;
+  background: transparent;
+  color: var(--text-3);
+  border-radius: 3px;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.fu-chip__x:hover {
+  background: rgba(248, 113, 113, 0.15);
+  color: #f87171;
+}
+</style>
