@@ -69,7 +69,7 @@
             <el-avatar :size="32" class="bg-indigo-600">
               {{ authStore.user?.realName?.charAt(0) || "U" }}
             </el-avatar>
-            <span class="text-sm">{{ authStore.user?.realName }}</span>
+            <span class="text-sm"><span class="w-2 h-2 rounded-full bg-green-400 inline-block mr-1"></span>{{ authStore.user?.realName }}</span>
             <el-icon><ArrowDown /></el-icon>
           </span>
           <template #dropdown>

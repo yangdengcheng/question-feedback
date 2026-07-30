@@ -10,6 +10,9 @@
     </div>
 
     <div class="glass-card-static p-4 mb-6 flex items-center gap-4 flex-wrap">
+      <el-input v-model="keyword" placeholder="搜索工单标题..." clearable class="w-64" @input="handleSearch" @clear="handleSearch">
+        <template #prefix><el-icon><Search /></el-icon></template>
+      </el-input>
       <el-select
         v-model="filters.status"
         placeholder="状态"
@@ -90,6 +93,13 @@ const page = ref(1);
 const pageSize = ref(20);
 const total = ref(0);
 
+const keyword = ref("");
+let searchTimer = null;
+function handleSearch() {
+  clearTimeout(searchTimer);
+  searchTimer = setTimeout(() => { fetchTickets(); }, 300);
+}
+
 const filters = reactive({
   status: "",
   type: "",
@@ -108,7 +118,7 @@ onMounted(() => {
 async function fetchTickets() {
   loading.value = true;
   try {
-    const params = { page: page.value, pageSize: pageSize.value };
+    const params = { page: page.value, pageSize: pageSize.value, keyword: keyword.value || undefined };
     if (filters.status) params.status = filters.status;
     if (filters.type) params.type = filters.type;
     if (filters.priority) params.priority = filters.priority;

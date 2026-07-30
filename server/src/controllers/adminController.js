@@ -1,4 +1,5 @@
 const { Ticket, User, NotifyRule } = require("../models");
+const { Op } = require("sequelize");
 const { notifyAssigned, notifyStatusChange } = require("../services/notificationService");
 const { logAction } = require("../services/ticketLogService");
 
@@ -9,6 +10,10 @@ async function listTickets(req, res, next) {
     if (status) where.status = status;
     if (type) where.type = type;
     if (priority) where.priority = priority;
+    const { keyword } = req.query;
+    if (keyword) {
+      where.title = { [Op.like]: `%${keyword}%` };
+    }
     const offset = (parseInt(page, 10) - 1) * parseInt(pageSize, 10);
     const { count, rows } = await Ticket.findAndCountAll({
       where,
@@ -114,6 +119,8 @@ async function updateUser(req, res, next) {
     const { isActive, role } = req.body;
     if (isActive !== undefined) user.isActive = isActive;
     if (role !== undefined) user.role = role;
+    if (req.body.realName !== undefined) user.realName = req.body.realName;
+    if (req.body.email !== undefined) user.email = req.body.email;
     await user.save();
     const { passwordHash, ...rest } = user.toJSON();
     res.json(rest);

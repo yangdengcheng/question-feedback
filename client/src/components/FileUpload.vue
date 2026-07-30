@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div @paste="handlePaste" tabindex="0" class="outline-none">
     <el-upload
       drag
       :auto-upload="true"
@@ -8,11 +8,9 @@
       :accept="acceptTypes"
       multiple
     >
-      <el-icon class="el-icon--upload text-indigo-400" :size="40"
-        ><UploadFilled
-      /></el-icon>
+      <el-icon class="el-icon--upload text-indigo-400" :size="40"><UploadFilled /></el-icon>
       <div class="el-upload__text text-slate-400">
-        拖拽文件到此处，或 <em class="text-indigo-400">点击上传</em>
+        拖拽文件到此处，或 <em class="text-indigo-400">点击上传</em>，或 <em class="text-cyan-400">Ctrl+V 粘贴截图</em>
       </div>
       <template #tip>
         <div class="el-upload__tip text-slate-500">
@@ -29,21 +27,15 @@
       >
         <div class="flex items-center gap-3 min-w-0">
           <el-image
-            v-if="file.fileType.startsWith('image/')"
+            v-if="file.fileType && file.fileType.startsWith('image/')"
             :src="`/api/attachments/${file.id}`"
             :preview-src-list="[`/api/attachments/${file.id}`]"
             class="w-10 h-10 rounded object-cover"
             fit="cover"
           />
-          <el-icon v-else :size="20" class="text-slate-400"
-            ><Document
-          /></el-icon>
-          <span class="text-sm text-slate-300 truncate">{{
-            file.fileName
-          }}</span>
-          <span class="text-xs text-slate-500">{{
-            formatSize(file.fileSize)
-          }}</span>
+          <el-icon v-else :size="20" class="text-slate-400"><Document /></el-icon>
+          <span class="text-sm text-slate-300 truncate">{{ file.fileName }}</span>
+          <span class="text-xs text-slate-500">{{ formatSize(file.fileSize) }}</span>
         </div>
         <el-button type="danger" text size="small" @click="removeFile(file.id)">
           <el-icon><Delete /></el-icon>
@@ -54,20 +46,18 @@
 </template>
 
 <script setup>
-import { ref } from "vue";
+import { ref, onMounted, onUnmounted } from "vue";
 import { ElMessage } from "element-plus";
 import request from "../api/request";
 
 const emit = defineEmits(["update:attachmentIds"]);
 
 const fileList = ref([]);
-const acceptTypes =
-  ".jpg,.jpeg,.png,.gif,.mp4,.pdf,.doc,.docx,.xls,.xlsx,.zip,.rar";
+const acceptTypes = ".jpg,.jpeg,.png,.gif,.mp4,.pdf,.doc,.docx,.xls,.xlsx,.zip,.rar";
 
 async function handleUpload(options) {
   const formData = new FormData();
   formData.append("file", options.file);
-
   try {
     const data = await request.post("/upload", formData, {
       headers: { "Content-Type": "multipart/form-data" },
@@ -80,16 +70,29 @@ async function handleUpload(options) {
   }
 }
 
+function handlePaste(event) {
+  const items = event.clipboardData?.items;
+  if (!items) return;
+  for (const item of items) {
+    if (item.type.startsWith("image/")) {
+      event.preventDefault();
+      const file = item.getAsFile();
+      if (file) {
+        const namedFile = new File([file], `screenshot-${Date.now()}.png`, { type: file.type });
+        handleUpload({ file: namedFile });
+      }
+      break;
+    }
+  }
+}
+
 function removeFile(id) {
   fileList.value = fileList.value.filter((f) => f.id !== id);
   emitIds();
 }
 
 function emitIds() {
-  emit(
-    "update:attachmentIds",
-    fileList.value.map((f) => f.id),
-  );
+  emit("update:attachmentIds", fileList.value.map((f) => f.id));
 }
 
 function formatSize(bytes) {
@@ -97,4 +100,13 @@ function formatSize(bytes) {
   if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB";
   return (bytes / (1024 * 1024)).toFixed(1) + " MB";
 }
+
+function globalPasteHandler(event) {
+  const tag = event.target?.tagName?.toLowerCase();
+  if (tag === "input" || tag === "textarea") return;
+  handlePaste(event);
+}
+
+onMounted(() => { document.addEventListener("paste", globalPasteHandler); });
+onUnmounted(() => { document.removeEventListener("paste", globalPasteHandler); });
 </script>

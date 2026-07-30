@@ -27,8 +27,21 @@
         <el-table-column label="注册时间" width="150">
           <template #default="{ row }">{{ formatTime(row.createdAt) }}</template>
         </el-table-column>
-        <el-table-column label="操作" width="200" fixed="right">
+        <el-table-column label="在线" width="80">
           <template #default="{ row }">
+            <span v-if="isOnline(row.lastActiveAt)" class="inline-flex items-center gap-1">
+              <span class="w-2 h-2 rounded-full bg-green-400 inline-block"></span>
+              <span class="text-xs text-green-400">在线</span>
+            </span>
+            <span v-else class="inline-flex items-center gap-1">
+              <span class="w-2 h-2 rounded-full bg-slate-600 inline-block"></span>
+              <span class="text-xs text-slate-500">离线</span>
+            </span>
+          </template>
+        </el-table-column>
+        <el-table-column label="操作" width="240" fixed="right">
+          <template #default="{ row }">
+            <el-button size="small" text type="primary" @click="openEditDialog(row)">编辑</el-button>
             <el-button size="small" text :type="row.isActive ? 'danger' : 'success'" @click="toggleActive(row)">
               {{ row.isActive ? "禁用" : "启用" }}
             </el-button>
@@ -65,6 +78,25 @@
       </template>
     </el-dialog>
 
+    <!-- 编辑用户信息对话框 -->
+    <el-dialog v-model="showEditDialog" title="编辑用户信息" width="480px">
+      <el-form :model="editForm" label-position="top">
+        <el-form-item label="用户名">
+          <el-input :model-value="editForm.username" disabled />
+        </el-form-item>
+        <el-form-item label="姓名">
+          <el-input v-model="editForm.realName" />
+        </el-form-item>
+        <el-form-item label="邮箱">
+          <el-input v-model="editForm.email" placeholder="选填" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="showEditDialog = false">取消</el-button>
+        <el-button type="primary" @click="handleEdit">保存</el-button>
+      </template>
+    </el-dialog>
+
     <!-- 变更角色对话框 -->
     <el-dialog v-model="showRoleDialog" title="变更角色" width="400px">
       <p class="text-sm text-slate-400 mb-4">用户：{{ roleDialogUser?.realName }}</p>
@@ -88,10 +120,12 @@ const users = ref([]);
 const loading = ref(false);
 const showCreateDialog = ref(false);
 const showRoleDialog = ref(false);
+const showEditDialog = ref(false);
 const creating = ref(false);
 const roleDialogUser = ref(null);
 const newRole = ref("");
 const createFormRef = ref(null);
+const editForm = reactive({ id: null, username: "", realName: "", email: "" });
 
 const roleOptions = [
   { value: "customer", label: "客户" },
@@ -158,6 +192,28 @@ async function toggleActive(row) {
     ElMessage.success(row.isActive ? "已禁用" : "已启用");
     fetchUsers();
   } catch (e) {}
+}
+
+function openEditDialog(row) {
+  editForm.id = row.id;
+  editForm.username = row.username;
+  editForm.realName = row.realName;
+  editForm.email = row.email || "";
+  showEditDialog.value = true;
+}
+
+async function handleEdit() {
+  try {
+    await adminApi.updateUser(editForm.id, { realName: editForm.realName, email: editForm.email });
+    ElMessage.success("用户信息更新成功");
+    showEditDialog.value = false;
+    fetchUsers();
+  } catch (e) {}
+}
+
+function isOnline(lastActiveAt) {
+  if (!lastActiveAt) return false;
+  return Date.now() - new Date(lastActiveAt).getTime() < 5 * 60 * 1000; // 5 minutes
 }
 
 function formatTime(time) {

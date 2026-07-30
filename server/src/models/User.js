@@ -20,6 +20,7 @@ const User = sequelize.define(
     },
     role: { type: DataTypes.ENUM("customer", "data_maintenance", "dev_lead", "developer", "tester", "admin"), allowNull: false, defaultValue: "customer" },
     isActive: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: true, field: "is_active" },
+    lastActiveAt: { type: DataTypes.DATE, allowNull: true, field: "last_active_at" },
   },
   { tableName: "users" },
 );

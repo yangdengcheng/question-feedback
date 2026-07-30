@@ -91,6 +91,7 @@ const form = reactive({
 
 const rules = {
   title: [{ required: true, message: "请输入标题", trigger: "blur" }],
+  description: [{ required: true, message: "请填写详细描述", trigger: "blur" }],
 };
 
 async function handleSubmit() {

@@ -55,6 +55,11 @@ async function list(req, res, next) {
     if (type) where.type = type;
     if (priority) where.priority = priority;
 
+    const { keyword } = req.query;
+    if (keyword) {
+      where.title = { [Op.like]: `%${keyword}%` };
+    }
+
     const offset = (parseInt(page, 10) - 1) * parseInt(pageSize, 10);
     const { count, rows } = await Ticket.findAndCountAll({
       where,

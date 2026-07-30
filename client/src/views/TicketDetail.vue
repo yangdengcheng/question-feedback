@@ -154,6 +154,9 @@
         <el-form-item label="转交说明（必填）">
           <el-input v-model="transferForm.content" type="textarea" :rows="3" placeholder="请说明转交原因..." />
         </el-form-item>
+        <el-form-item label="附件（可选）">
+          <FileUpload v-model:attachment-ids="transferAttachmentIds" />
+        </el-form-item>
       </el-form>
       <template #footer>
         <el-button @click="showTransferDialog = false">取消</el-button>
@@ -189,6 +192,7 @@ const showTransferDialog = ref(false);
 const transferring = ref(false);
 const internalUsers = ref([]);
 const transferForm = ref({ toUserId: null, content: "" });
+const transferAttachmentIds = ref([]);
 
 const INTERNAL_ROLES = ["data_maintenance", "dev_lead", "developer", "tester", "admin"];
 const isInternal = computed(() => INTERNAL_ROLES.includes(authStore.user?.role));
@@ -270,10 +274,11 @@ async function handleTransfer() {
   if (!transferForm.value.content.trim()) { ElMessage.warning("请填写转交说明"); return; }
   transferring.value = true;
   try {
-    await transferTicket(route.params.id, transferForm.value);
+    await transferTicket(route.params.id, { ...transferForm.value, attachmentIds: transferAttachmentIds.value });
     ElMessage.success("转工单成功");
     showTransferDialog.value = false;
     transferForm.value = { toUserId: null, content: "" };
+    transferAttachmentIds.value = [];
     notificationStore.fetchUnreadCount();
     fetchTicket();
   } catch (e) {} finally { transferring.value = false; }
