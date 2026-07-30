@@ -11,7 +11,7 @@ const Ticket = sequelize.define(
       validate: { notEmpty: { msg: "标题不能为空" }, len: { args: [1, 200], msg: "标题长度不能超过200个字符" } },
     },
     description: { type: DataTypes.TEXT, allowNull: true },
-    type: { type: DataTypes.ENUM("bug", "question", "suggestion"), allowNull: false, defaultValue: "bug" },
+    type: { type: DataTypes.ENUM("bug", "question"), allowNull: false, defaultValue: "bug" },
     status: { type: DataTypes.ENUM("pending", "processing", "resolved", "closed"), allowNull: false, defaultValue: "pending" },
     priority: { type: DataTypes.ENUM("low", "medium", "high"), allowNull: false, defaultValue: "medium" },
     userId: { type: DataTypes.INTEGER, allowNull: false, field: "user_id" },

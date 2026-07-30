@@ -20,15 +20,15 @@ async function seed() {
     });
     console.log("管理员创建成功: admin / admin123");
 
-    const devPasswordHash = await bcrypt.hash("dev123", 10);
-    const dev = await User.create({
+    const devLeadPasswordHash = await bcrypt.hash("dev123", 10);
+    const devLead = await User.create({
       username: "developer",
-      passwordHash: devPasswordHash,
+      passwordHash: devLeadPasswordHash,
       realName: "张开发",
       email: "dev@example.com",
-      role: "user",
+      role: "dev_lead",
     });
-    console.log("开发者创建成功: developer / dev123");
+    console.log("开发组长创建成功: developer / dev123");
 
     const userPasswordHash = await bcrypt.hash("user123", 10);
     const user = await User.create({
@@ -36,13 +36,29 @@ async function seed() {
       passwordHash: userPasswordHash,
       realName: "李用户",
       email: "user@example.com",
-      role: "user",
+      role: "customer",
     });
     console.log("普通用户创建成功: testuser / user123");
 
-    await NotifyRule.create({ userId: admin.id, ticketType: null });
-    await NotifyRule.create({ userId: dev.id, ticketType: "bug" });
-    console.log("通知规则创建成功");
+    const dev1PasswordHash = await bcrypt.hash("dev123", 10);
+    const dev1 = await User.create({
+      username: "dev1",
+      passwordHash: dev1PasswordHash,
+      realName: "王开发",
+      email: "dev1@example.com",
+      role: "developer",
+    });
+    console.log("开发者创建成功: dev1 / dev123");
+
+    const tester1PasswordHash = await bcrypt.hash("test123", 10);
+    const tester1 = await User.create({
+      username: "tester1",
+      passwordHash: tester1PasswordHash,
+      realName: "赵测试",
+      email: "tester1@example.com",
+      role: "tester",
+    });
+    console.log("测试人员创建成功: tester1 / test123");
 
     const ticketNo1 = await generateTicketNo();
     const ticket1 = await Ticket.create({
@@ -53,7 +69,7 @@ async function seed() {
       status: "processing",
       priority: "high",
       userId: user.id,
-      assigneeId: dev.id,
+      assigneeId: devLead.id,
     });
 
     const ticketNo2 = await generateTicketNo();
@@ -70,9 +86,9 @@ async function seed() {
     const ticketNo3 = await generateTicketNo();
     const ticket3 = await Ticket.create({
       ticketNo: ticketNo3,
-      title: "建议增加工单模板功能",
-      description: "很多用户反馈的问题类型相似，建议增加工单模板功能，让用户可以选择模板快速提交工单，提高提交效率。",
-      type: "suggestion",
+      title: "工单列表加载缓慢",
+      description: "当工单数量较多时，工单列表页面加载非常缓慢，需要等待很长时间才能显示数据。",
+      type: "question",
       status: "resolved",
       priority: "low",
       userId: user.id,
@@ -82,7 +98,7 @@ async function seed() {
 
     await Comment.create({
       ticketId: ticket1.id,
-      userId: dev.id,
+      userId: devLead.id,
       content: "已收到反馈，正在排查 Safari 兼容性问题。初步判断是 CSS flex 布局的兼容性问题。",
     });
 
@@ -95,7 +111,7 @@ async function seed() {
     await Comment.create({
       ticketId: ticket3.id,
       userId: admin.id,
-      content: "感谢建议！工单模板功能已纳入下一版本开发计划，预计两周后上线。",
+      content: "已优化查询性能，增加了分页和索引，问题已解决。",
     });
     console.log("示例评论创建成功");
 

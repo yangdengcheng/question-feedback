@@ -14,6 +14,7 @@ router.post("/notify-rules", adminController.createNotifyRule);
 router.patch("/notify-rules/:id", adminController.updateNotifyRule);
 router.delete("/notify-rules/:id", adminController.deleteNotifyRule);
 router.get("/users", adminController.listUsers);
+router.post("/users", adminController.createUser);
 router.patch("/users/:id", adminController.updateUser);
 
 module.exports = router;

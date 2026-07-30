@@ -1,17 +1,30 @@
-const { Notification, NotifyRule } = require("../models");
+const { Notification, User } = require("../models");
 
 async function notifyNewTicket(ticket) {
-  const rules = await NotifyRule.findAll({ where: { isActive: true } });
+  // Push to all dev_lead users
+  const devLeads = await User.findAll({ where: { role: "dev_lead", isActive: true } });
   const notifications = [];
-  for (const rule of rules) {
-    if (rule.ticketType && rule.ticketType !== ticket.type) continue;
-    if (rule.userId === ticket.userId) continue;
+  for (const lead of devLeads) {
+    if (lead.id === ticket.userId) continue;
     notifications.push({
-      userId: rule.userId,
+      userId: lead.id,
       ticketId: ticket.id,
       type: "new_ticket",
       content: `新工单 ${ticket.ticketNo}：${ticket.title}`,
     });
+  }
+  // Also push to admin
+  const admins = await User.findAll({ where: { role: "admin", isActive: true } });
+  for (const admin of admins) {
+    if (admin.id === ticket.userId) continue;
+    if (!notifications.find(n => n.userId === admin.id)) {
+      notifications.push({
+        userId: admin.id,
+        ticketId: ticket.id,
+        type: "new_ticket",
+        content: `新工单 ${ticket.ticketNo}：${ticket.title}`,
+      });
+    }
   }
   if (notifications.length > 0) {
     await Notification.bulkCreate(notifications);

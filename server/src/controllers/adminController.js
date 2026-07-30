@@ -1,5 +1,6 @@
 const { Ticket, User, NotifyRule } = require("../models");
 const { notifyAssigned, notifyStatusChange } = require("../services/notificationService");
+const { logAction } = require("../services/ticketLogService");
 
 async function listTickets(req, res, next) {
   try {
@@ -28,15 +29,19 @@ async function updateTicket(req, res, next) {
     const ticket = await Ticket.findByPk(req.params.id);
     if (!ticket) return res.status(404).json({ message: "工单不存在" });
     if (assigneeId !== undefined) {
+      const oldAssigneeId = ticket.assigneeId;
       ticket.assigneeId = assigneeId;
       if (assigneeId) {
         const assignee = await User.findByPk(assigneeId);
         if (assignee) await notifyAssigned(ticket, assignee);
       }
+      await logAction({ ticketId: ticket.id, userId: req.user.id, action: "assigned", fromAssigneeId: oldAssigneeId, toAssigneeId: assigneeId });
     }
     if (status && status !== ticket.status) {
+      const oldStatus = ticket.status;
       ticket.status = status;
       await notifyStatusChange(ticket, status);
+      await logAction({ ticketId: ticket.id, userId: req.user.id, action: "status_changed", fromStatus: oldStatus, toStatus: status });
     }
     await ticket.save();
     const result = await Ticket.findByPk(ticket.id, {
@@ -115,4 +120,24 @@ async function updateUser(req, res, next) {
   } catch (error) { next(error); }
 }
 
-module.exports = { listTickets, updateTicket, listNotifyRules, createNotifyRule, updateNotifyRule, deleteNotifyRule, listUsers, updateUser };
+async function createUser(req, res, next) {
+  try {
+    const bcrypt = require("bcryptjs");
+    const { username, password, realName, email, role } = req.body;
+    if (!username || !password || !realName || !role) {
+      return res.status(400).json({ message: "用户名、密码、姓名、角色为必填项" });
+    }
+    const validRoles = ["customer", "data_maintenance", "dev_lead", "developer", "tester", "admin"];
+    if (!validRoles.includes(role)) {
+      return res.status(400).json({ message: "无效的角色" });
+    }
+    const existing = await User.findOne({ where: { username } });
+    if (existing) return res.status(409).json({ message: "用户名已存在" });
+    const passwordHash = await bcrypt.hash(password, 10);
+    const user = await User.create({ username, passwordHash, realName, email: email || null, role });
+    const { passwordHash: _, ...rest } = user.toJSON();
+    res.status(201).json(rest);
+  } catch (error) { next(error); }
+}
+
+module.exports = { listTickets, updateTicket, listNotifyRules, createNotifyRule, updateNotifyRule, deleteNotifyRule, listUsers, updateUser, createUser };

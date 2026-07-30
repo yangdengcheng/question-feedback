@@ -18,7 +18,7 @@ const User = sequelize.define(
       type: DataTypes.STRING(100), allowNull: true,
       validate: { isEmail: { msg: "邮箱格式不正确" } },
     },
-    role: { type: DataTypes.ENUM("user", "admin"), allowNull: false, defaultValue: "user" },
+    role: { type: DataTypes.ENUM("customer", "data_maintenance", "dev_lead", "developer", "tester", "admin"), allowNull: false, defaultValue: "customer" },
     isActive: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: true, field: "is_active" },
   },
   { tableName: "users" },
