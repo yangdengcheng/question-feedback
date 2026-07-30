@@ -7,4 +7,5 @@ export function createNotifyRule(data) { return request.post("/admin/notify-rule
 export function updateNotifyRule(id, data) { return request.patch(`/admin/notify-rules/${id}`, data); }
 export function deleteNotifyRule(id) { return request.delete(`/admin/notify-rules/${id}`); }
 export function listUsers() { return request.get("/admin/users"); }
+export function createUser(data) { return request.post("/admin/users", data); }
 export function updateUser(id, data) { return request.patch(`/admin/users/${id}`, data); }

@@ -10,7 +10,7 @@ async function upload(req, res, next) {
     if (!ALLOWED_TYPES.includes(req.file.mimetype)) return res.status(400).json({ message: "不支持的文件类型" });
     if (req.file.size > MAX_SIZE) return res.status(400).json({ message: "文件大小不能超过10MB" });
     const attachment = await Attachment.create({
-      ticketId: 0, fileName: req.file.originalname, filePath: req.file.path,
+      ticketId: null, fileName: req.file.originalname, filePath: req.file.path,
       fileSize: req.file.size, fileType: req.file.mimetype, uploadedBy: req.user.id,
     });
     res.status(201).json(attachment);

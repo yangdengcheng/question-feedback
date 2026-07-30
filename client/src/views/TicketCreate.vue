@@ -32,7 +32,6 @@
           <el-radio-group v-model="form.type">
             <el-radio-button value="bug">Bug</el-radio-button>
             <el-radio-button value="question">使用问题</el-radio-button>
-            <el-radio-button value="suggestion">功能建议</el-radio-button>
           </el-radio-group>
         </el-form-item>
 

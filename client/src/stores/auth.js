@@ -7,6 +7,8 @@ export const useAuthStore = defineStore("auth", () => {
   const token = ref(localStorage.getItem("token") || "");
   const isLoggedIn = computed(() => !!token.value);
   const isAdmin = computed(() => user.value?.role === "admin");
+  const INTERNAL_ROLES = ["data_maintenance", "dev_lead", "developer", "tester", "admin"];
+  const isInternal = computed(() => INTERNAL_ROLES.includes(user.value?.role));
 
   async function login(credentials) {
     const data = await authApi.login(credentials);
@@ -43,5 +45,5 @@ export const useAuthStore = defineStore("auth", () => {
     }
   }
 
-  return { user, token, isLoggedIn, isAdmin, login, register, logout, fetchMe };
+  return { user, token, isLoggedIn, isAdmin, isInternal, login, register, logout, fetchMe };
 });
