@@ -17,8 +17,10 @@ async function auth(req, res, next) {
       return res.status(403).json({ message: "账号已被禁用" });
     }
     req.user = user;
-    // Update last active time (non-blocking)
-    user.update({ lastActiveAt: new Date() }).catch(() => {});
+    // Update last active time (non-blocking); skip for offline beacon to avoid clobbering the null
+    if (req.path !== "/offline") {
+      user.update({ lastActiveAt: new Date() }).catch(() => {});
+    }
     next();
   } catch (error) {
     return res.status(401).json({ message: "认证令牌无效或已过期" });

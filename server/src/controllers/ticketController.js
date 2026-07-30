@@ -1,5 +1,5 @@
 const { Ticket, User, Attachment, TicketLog } = require("../models");
-const { Op } = require("sequelize");
+const { Op, fn, col } = require("sequelize");
 const { generateTicketNo } = require("../services/ticketService");
 const { notifyNewTicket, notifyStatusChange, notifyAssigned } = require("../services/notificationService");
 const { logAction } = require("../services/ticketLogService");
@@ -93,6 +93,7 @@ async function detail(req, res, next) {
             { model: User, as: "operator", attributes: ["id", "realName"] },
             { model: User, as: "fromAssignee", attributes: ["id", "realName"] },
             { model: User, as: "toAssignee", attributes: ["id", "realName"] },
+            { model: Attachment, as: "attachments" },
           ],
         },
       ],
@@ -121,7 +122,7 @@ async function updateStatus(req, res, next) {
     if (!isInternal) {
       // Customer: only resolved → closed or resolved → processing
       if (ticket.userId !== req.user.id) return res.status(403).json({ message: "无权操作此工单" });
-      const allowedTransitions = { resolved: ["closed", "processing"] };
+      const allowedTransitions = { resolved: ["closed", "processing"], closed: ["processing"] };
       const allowed = allowedTransitions[ticket.status];
       if (!allowed || !allowed.includes(status)) return res.status(403).json({ message: "不允许的状态变更" });
     } else {
@@ -151,7 +152,7 @@ async function updateStatus(req, res, next) {
 
 async function transfer(req, res, next) {
   try {
-    const { toUserId, content } = req.body;
+    const { toUserId, content, attachmentIds } = req.body;
     if (!toUserId) return res.status(400).json({ message: "请选择转交人" });
     if (!content || !content.trim()) return res.status(400).json({ message: "转工单必须填写说明" });
 
@@ -171,7 +172,7 @@ async function transfer(req, res, next) {
     if (ticket.status === "pending") ticket.status = "processing";
     await ticket.save();
 
-    await logAction({
+    const log = await logAction({
       ticketId: ticket.id,
       userId: req.user.id,
       action: "transferred",
@@ -179,6 +180,14 @@ async function transfer(req, res, next) {
       toAssigneeId: toUserId,
       content: content.trim(),
     });
+
+    // 关联转交附件到该流转记录
+    if (attachmentIds && attachmentIds.length > 0) {
+      await Attachment.update(
+        { logId: log.id, ticketId: ticket.id },
+        { where: { id: attachmentIds, uploadedBy: req.user.id } },
+      );
+    }
 
     // Notify the new assignee
     await notifyAssigned(ticket, targetUser);
@@ -193,4 +202,55 @@ async function transfer(req, res, next) {
   } catch (error) { next(error); }
 }
 
-module.exports = { create, list, detail, updateStatus, transfer };
+const INTERNAL_ROLES = ["data_maintenance", "dev_lead", "developer", "tester", "admin"];
+
+// 可转交的内部用户列表（所有内部角色可访问）
+async function listAssignees(req, res, next) {
+  try {
+    if (!INTERNAL_ROLES.includes(req.user.role)) {
+      return res.status(403).json({ message: "无权访问" });
+    }
+    const users = await User.findAll({
+      where: { role: { [Op.in]: INTERNAL_ROLES }, isActive: true },
+      attributes: ["id", "realName", "role"],
+      order: [["createdAt", "DESC"]],
+    });
+    res.json(users);
+  } catch (error) { next(error); }
+}
+
+// 工单看板：内部角色统计「分配给我的」，客户统计「我创建的」
+async function stats(req, res, next) {
+  try {
+    const isInternal = INTERNAL_ROLES.includes(req.user.role);
+    const where = isInternal ? { assigneeId: req.user.id } : { userId: req.user.id };
+
+    const grouped = await Ticket.findAll({
+      where,
+      attributes: ["status", [fn("COUNT", col("id")), "count"]],
+      group: ["status"],
+      raw: true,
+    });
+    const byStatus = { pending: 0, processing: 0, resolved: 0, closed: 0 };
+    let total = 0;
+    for (const g of grouped) {
+      const c = parseInt(g.count, 10);
+      byStatus[g.status] = c;
+      total += c;
+    }
+
+    const recent = await Ticket.findAll({
+      where,
+      include: [
+        { model: User, as: "creator", attributes: ["id", "realName"] },
+        { model: User, as: "assignee", attributes: ["id", "realName"] },
+      ],
+      order: [["updatedAt", "DESC"]],
+      limit: 8,
+    });
+
+    res.json({ byStatus, total, recent });
+  } catch (error) { next(error); }
+}
+
+module.exports = { create, list, detail, updateStatus, transfer, listAssignees, stats };

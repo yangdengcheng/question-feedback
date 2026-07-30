@@ -9,6 +9,7 @@ const routes = [
     meta: { requiresAuth: true },
     children: [
       { path: "", name: "TicketList", component: () => import("../views/TicketList.vue") },
+      { path: "dashboard", name: "Dashboard", component: () => import("../views/Dashboard.vue") },
       { path: "tickets/new", name: "TicketCreate", component: () => import("../views/TicketCreate.vue") },
       { path: "tickets/:id", name: "TicketDetail", component: () => import("../views/TicketDetail.vue") },
       { path: "notifications", name: "Notifications", component: () => import("../views/Notifications.vue") },
@@ -20,7 +21,6 @@ const routes = [
     meta: { requiresAuth: true, requiresAdmin: true },
     children: [
       { path: "tickets", name: "AdminTickets", component: () => import("../views/admin/AdminTickets.vue") },
-      { path: "notify-rules", name: "AdminNotifyRules", component: () => import("../views/admin/AdminNotifyRules.vue") },
       { path: "users", name: "AdminUsers", component: () => import("../views/admin/AdminUsers.vue") },
     ],
   },

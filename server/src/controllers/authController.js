@@ -62,4 +62,14 @@ async function me(req, res, next) {
   }
 }
 
-module.exports = { register, login, me };
+// 主动下线：清空最后活跃时间，使在线状态立即转为离线
+async function offline(req, res, next) {
+  try {
+    await req.user.update({ lastActiveAt: null });
+    res.json({ message: "已下线" });
+  } catch (error) {
+    next(error);
+  }
+}
+
+module.exports = { register, login, me, offline };

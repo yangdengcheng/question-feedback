@@ -51,7 +51,7 @@
           <span class="text-sm text-slate-500 mb-2 block">附件</span>
           <div class="flex flex-wrap gap-3">
             <template v-for="att in ticket.attachments" :key="att.id">
-              <el-image v-if="att.fileType.startsWith('image/')" :src="`/api/attachments/${att.id}`" :preview-src-list="[`/api/attachments/${att.id}`]" class="w-20 h-20 rounded-lg" fit="cover" />
+              <img v-if="att.fileType.startsWith('image/')" :src="`/api/attachments/${att.id}`" class="w-20 h-20 rounded-lg object-cover cursor-pointer hover:opacity-80 transition-opacity" @click="openAttachmentPreview(ticket.attachments.filter(a => a.fileType.startsWith('image/')).indexOf(att))" />
               <a v-else :href="`/api/attachments/${att.id}`" target="_blank" class="flex items-center gap-2 text-xs text-indigo-400 hover:text-indigo-300 glass-card-static px-3 py-2 rounded-lg transition-colors">
                 <el-icon><Document /></el-icon>
                 {{ att.fileName }}
@@ -74,9 +74,9 @@
 
           <!-- 内部角色：状态变更 -->
           <template v-if="isInternal">
-            <el-dropdown trigger="click" @command="handleStatusChange" v-if="ticket.status !== 'closed'">
+            <el-dropdown trigger="click" @command="handleStatusChange">
               <el-button type="primary" plain>
-                变更状态<el-icon class="ml-1"><ArrowDown /></el-icon>
+                {{ ticket.status === 'closed' ? '重新打开' : '变更状态' }}<el-icon class="ml-1"><ArrowDown /></el-icon>
               </el-button>
               <template #dropdown>
                 <el-dropdown-menu>
@@ -91,6 +91,13 @@
             <!-- 转工单按钮 -->
             <el-button type="warning" plain @click="showTransferDialog = true">
               <el-icon class="mr-1"><Sort /></el-icon>转工单
+            </el-button>
+          </template>
+
+          <!-- 客户：已关闭工单可重新打开 -->
+          <template v-if="!isInternal && ticket.status === 'closed' && ticket.userId === authStore.user?.id">
+            <el-button type="primary" @click="handleStatusChange('processing')">
+              <el-icon class="mr-1"><RefreshRight /></el-icon>重新打开
             </el-button>
           </template>
         </div>
@@ -113,6 +120,14 @@
             </div>
             <div v-if="log.content" class="text-xs text-slate-500 mt-1 pl-1 border-l-2 border-indigo-500/30 ml-0.5">
               {{ log.content }}
+            </div>
+            <div v-if="log.attachments && log.attachments.length > 0" class="mt-2 flex flex-wrap gap-2">
+              <template v-for="att in log.attachments" :key="att.id">
+                <img v-if="att.fileType.startsWith('image/')" :src="`/api/attachments/${att.id}`" class="w-16 h-16 rounded-lg object-cover cursor-pointer hover:opacity-80 transition-opacity" @click="openLogPreview(log, att)" />
+                <a v-else :href="`/api/attachments/${att.id}`" target="_blank" class="flex items-center gap-1 text-xs text-indigo-400 hover:text-indigo-300 glass-card-static px-2 py-1 rounded-lg transition-colors">
+                  <el-icon><Document /></el-icon>{{ att.fileName }}
+                </a>
+              </template>
             </div>
           </el-timeline-item>
         </el-timeline>
@@ -163,6 +178,10 @@
         <el-button type="primary" :loading="transferring" @click="handleTransfer">确认转交</el-button>
       </template>
     </el-dialog>
+
+    <!-- 图片预览 -->
+    <ImageViewer v-model:visible="attachmentPreviewVisible" :images="attachmentPreviewImages" :initial-index="attachmentPreviewIndex" />
+    <ImageViewer v-model:visible="logPreviewVisible" :images="logPreviewImages" :initial-index="logPreviewIndex" />
   </div>
 </template>
 
@@ -170,13 +189,13 @@
 import { ref, computed, onMounted } from "vue";
 import { useRoute } from "vue-router";
 import { ElMessage } from "element-plus";
-import { getTicketDetail, updateTicketStatus, transferTicket, listComments, createComment } from "../api/tickets";
-import * as adminApi from "../api/admin";
+import { getTicketDetail, updateTicketStatus, transferTicket, listComments, createComment, listAssignees } from "../api/tickets";
 import { useAuthStore } from "../stores/auth";
 import { useNotificationStore } from "../stores/notification";
 import StatusBadge from "../components/StatusBadge.vue";
 import CommentItem from "../components/CommentItem.vue";
 import FileUpload from "../components/FileUpload.vue";
+import ImageViewer from "../components/ImageViewer.vue";
 
 const route = useRoute();
 const authStore = useAuthStore();
@@ -193,6 +212,31 @@ const transferring = ref(false);
 const internalUsers = ref([]);
 const transferForm = ref({ toUserId: null, content: "" });
 const transferFileUploadRef = ref(null);
+
+// Attachment image preview
+const attachmentPreviewVisible = ref(false);
+const attachmentPreviewIndex = ref(0);
+const attachmentPreviewImages = computed(() => {
+  if (!ticket.value?.attachments) return [];
+  return ticket.value.attachments
+    .filter(a => a.fileType.startsWith("image/"))
+    .map(a => ({ url: `/api/attachments/${a.id}`, name: a.fileName }));
+});
+function openAttachmentPreview(idx) {
+  attachmentPreviewIndex.value = idx;
+  attachmentPreviewVisible.value = true;
+}
+
+// 流转记录附件预览
+const logPreviewVisible = ref(false);
+const logPreviewIndex = ref(0);
+const logPreviewImages = ref([]);
+function openLogPreview(log, att) {
+  const imgs = (log.attachments || []).filter(a => a.fileType.startsWith("image/"));
+  logPreviewImages.value = imgs.map(a => ({ url: `/api/attachments/${a.id}`, name: a.fileName }));
+  logPreviewIndex.value = imgs.indexOf(att);
+  logPreviewVisible.value = true;
+}
 
 const INTERNAL_ROLES = ["data_maintenance", "dev_lead", "developer", "tester", "admin"];
 const isInternal = computed(() => INTERNAL_ROLES.includes(authStore.user?.role));
@@ -254,8 +298,8 @@ async function fetchComments() {
 
 async function fetchInternalUsers() {
   try {
-    const allUsers = await adminApi.listUsers();
-    internalUsers.value = allUsers.filter(u => INTERNAL_ROLES.includes(u.role) && u.isActive && u.id !== authStore.user?.id);
+    const users = await listAssignees();
+    internalUsers.value = users.filter(u => u.id !== authStore.user?.id);
   } catch (e) {}
 }
 

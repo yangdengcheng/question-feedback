@@ -4,8 +4,10 @@ async function list(req, res, next) {
   try {
     const { page = 1, pageSize = 20 } = req.query;
     const offset = (parseInt(page, 10) - 1) * parseInt(pageSize, 10);
+    const where = { userId: req.user.id };
+    if (req.query.unread === "true") where.isRead = false;
     const { count, rows } = await Notification.findAndCountAll({
-      where: { userId: req.user.id },
+      where,
       include: [{ model: Ticket, as: "ticket", attributes: ["id", "ticketNo", "title"] }],
       order: [["createdAt", "DESC"]],
       limit: parseInt(pageSize, 10), offset,

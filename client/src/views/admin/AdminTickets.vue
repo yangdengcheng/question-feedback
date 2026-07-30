@@ -2,12 +2,33 @@
   <div>
     <h1 class="text-xl font-bold text-slate-200 mb-6">工单管理</h1>
 
-    <div class="glass-card-static p-4 mb-6 flex items-center gap-4">
+    <div class="glass-card-static p-4 mb-6 flex items-center gap-4 flex-wrap">
+      <el-input
+        v-model="filters.ticketNo"
+        placeholder="工单编号"
+        clearable
+        class="w-44"
+        @input="handleSearch"
+        @clear="handleSearch"
+      >
+        <template #prefix><el-icon><Search /></el-icon></template>
+      </el-input>
+      <el-input
+        v-model="filters.keyword"
+        placeholder="标题（模糊搜索）"
+        clearable
+        class="w-56"
+        @input="handleSearch"
+        @clear="handleSearch"
+      >
+        <template #prefix><el-icon><Search /></el-icon></template>
+      </el-input>
       <el-select
         v-model="filters.status"
         placeholder="状态"
         clearable
         class="w-32"
+        @change="handleFilterChange"
       >
         <el-option label="待处理" value="pending" />
         <el-option label="处理中" value="processing" />
@@ -19,15 +40,15 @@
         placeholder="类型"
         clearable
         class="w-32"
+        @change="handleFilterChange"
       >
         <el-option label="Bug" value="bug" />
         <el-option label="使用问题" value="question" />
-        <el-option label="功能建议" value="suggestion" />
       </el-select>
     </div>
 
     <div class="glass-card-static p-4">
-      <el-table :data="tickets" v-loading="loading" stripe>
+      <el-table :data="tickets" v-loading="loading" stripe :row-class-name="rowClassName">
         <el-table-column prop="ticketNo" label="工单号" width="160" />
         <el-table-column
           prop="title"
@@ -56,9 +77,10 @@
           <template #default="{ row }">{{ row.creator?.realName }}</template>
         </el-table-column>
         <el-table-column label="处理人" width="100">
-          <template #default="{ row }">{{
-            row.assignee?.realName || "未分配"
-          }}</template>
+          <template #default="{ row }">
+            <span v-if="row.assignee">{{ row.assignee.realName }}</span>
+            <span v-else class="text-amber-400 font-medium">未分配</span>
+          </template>
         </el-table-column>
         <el-table-column label="更新时间" width="160">
           <template #default="{ row }">{{
@@ -97,13 +119,15 @@
         </el-table-column>
       </el-table>
 
-      <div v-if="total > pageSize" class="flex justify-center mt-6">
+      <div v-if="total > 0" class="flex justify-center mt-6">
         <el-pagination
           v-model:current-page="page"
-          :page-size="pageSize"
+          v-model:page-size="pageSize"
+          :page-sizes="[10, 20, 50, 100]"
           :total="total"
-          layout="prev, pager, next"
+          layout="total, sizes, prev, pager, next"
           @current-change="fetchTickets"
+          @size-change="handleSizeChange"
         />
       </div>
     </div>
@@ -131,7 +155,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, watch, onMounted } from "vue";
+import { ref, reactive, onMounted } from "vue";
 import { ElMessage } from "element-plus";
 import * as adminApi from "../../api/admin";
 import StatusBadge from "../../components/StatusBadge.vue";
@@ -146,12 +170,30 @@ const assignDialogVisible = ref(false);
 const selectedAssignee = ref(null);
 const currentTicket = ref(null);
 
-const filters = reactive({ status: "", type: "" });
+const filters = reactive({ status: "", type: "", ticketNo: "", keyword: "" });
 
-watch(filters, () => {
+let searchTimer = null;
+function handleSearch() {
+  clearTimeout(searchTimer);
+  searchTimer = setTimeout(() => {
+    page.value = 1;
+    fetchTickets();
+  }, 300);
+}
+
+function handleFilterChange() {
   page.value = 1;
   fetchTickets();
-});
+}
+
+function handleSizeChange() {
+  page.value = 1;
+  fetchTickets();
+}
+
+function rowClassName({ row }) {
+  return row.assigneeId ? "" : "unassigned-row";
+}
 
 onMounted(() => {
   fetchTickets();
@@ -164,6 +206,8 @@ async function fetchTickets() {
     const params = { page: page.value, pageSize: pageSize.value };
     if (filters.status) params.status = filters.status;
     if (filters.type) params.type = filters.type;
+    if (filters.ticketNo.trim()) params.ticketNo = filters.ticketNo.trim();
+    if (filters.keyword.trim()) params.keyword = filters.keyword.trim();
     const data = await adminApi.listTickets(params);
     tickets.value = data.rows;
     total.value = data.count;
@@ -212,12 +256,12 @@ async function handleStatusChange(row, status) {
 }
 
 function typeLabel(type) {
-  const map = { bug: "Bug", question: "使用问题", suggestion: "功能建议" };
+  const map = { bug: "Bug", question: "使用问题" };
   return map[type] || type;
 }
 
 function typeTagType(type) {
-  const map = { bug: "danger", question: "warning", suggestion: "success" };
+  const map = { bug: "danger", question: "warning" };
   return map[type] || "info";
 }
 
@@ -232,3 +276,12 @@ function formatTime(time) {
   return `${d.getMonth() + 1}/${d.getDate()} ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
 }
 </script>
+
+<style scoped>
+:deep(.el-table .unassigned-row > td) {
+  background-color: rgba(245, 158, 11, 0.1) !important;
+}
+:deep(.el-table .unassigned-row:hover > td) {
+  background-color: rgba(245, 158, 11, 0.18) !important;
+}
+</style>

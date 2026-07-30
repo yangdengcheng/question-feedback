@@ -1,4 +1,4 @@
-const { Ticket, User, NotifyRule } = require("../models");
+const { Ticket, User } = require("../models");
 const { Op } = require("sequelize");
 const { notifyAssigned, notifyStatusChange } = require("../services/notificationService");
 const { logAction } = require("../services/ticketLogService");
@@ -10,9 +10,12 @@ async function listTickets(req, res, next) {
     if (status) where.status = status;
     if (type) where.type = type;
     if (priority) where.priority = priority;
-    const { keyword } = req.query;
+    const { keyword, ticketNo } = req.query;
     if (keyword) {
       where.title = { [Op.like]: `%${keyword}%` };
+    }
+    if (ticketNo) {
+      where.ticketNo = { [Op.like]: `%${ticketNo}%` };
     }
     const offset = (parseInt(page, 10) - 1) * parseInt(pageSize, 10);
     const { count, rows } = await Ticket.findAndCountAll({
@@ -59,52 +62,6 @@ async function updateTicket(req, res, next) {
   } catch (error) { next(error); }
 }
 
-async function listNotifyRules(req, res, next) {
-  try {
-    const rules = await NotifyRule.findAll({
-      include: [{ model: User, as: "user", attributes: ["id", "username", "realName"] }],
-      order: [["createdAt", "DESC"]],
-    });
-    res.json(rules);
-  } catch (error) { next(error); }
-}
-
-async function createNotifyRule(req, res, next) {
-  try {
-    const { userId, ticketType } = req.body;
-    if (!userId) return res.status(400).json({ message: "用户ID不能为空" });
-    const rule = await NotifyRule.create({ userId, ticketType: ticketType || null });
-    const result = await NotifyRule.findByPk(rule.id, {
-      include: [{ model: User, as: "user", attributes: ["id", "username", "realName"] }],
-    });
-    res.status(201).json(result);
-  } catch (error) { next(error); }
-}
-
-async function updateNotifyRule(req, res, next) {
-  try {
-    const rule = await NotifyRule.findByPk(req.params.id);
-    if (!rule) return res.status(404).json({ message: "规则不存在" });
-    const { isActive, ticketType } = req.body;
-    if (isActive !== undefined) rule.isActive = isActive;
-    if (ticketType !== undefined) rule.ticketType = ticketType;
-    await rule.save();
-    const result = await NotifyRule.findByPk(rule.id, {
-      include: [{ model: User, as: "user", attributes: ["id", "username", "realName"] }],
-    });
-    res.json(result);
-  } catch (error) { next(error); }
-}
-
-async function deleteNotifyRule(req, res, next) {
-  try {
-    const rule = await NotifyRule.findByPk(req.params.id);
-    if (!rule) return res.status(404).json({ message: "规则不存在" });
-    await rule.destroy();
-    res.json({ message: "删除成功" });
-  } catch (error) { next(error); }
-}
-
 async function listUsers(req, res, next) {
   try {
     const users = await User.findAll({ attributes: { exclude: ["passwordHash"] }, order: [["createdAt", "DESC"]] });
@@ -147,4 +104,4 @@ async function createUser(req, res, next) {
   } catch (error) { next(error); }
 }
 
-module.exports = { listTickets, updateTicket, listNotifyRules, createNotifyRule, updateNotifyRule, deleteNotifyRule, listUsers, updateUser, createUser };
+module.exports = { listTickets, updateTicket, listUsers, updateUser, createUser };

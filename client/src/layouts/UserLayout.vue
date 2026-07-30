@@ -17,6 +17,18 @@
 
         <nav class="flex items-center gap-6">
           <router-link
+            v-if="authStore.isInternal"
+            to="/dashboard"
+            class="text-sm transition-colors duration-200"
+            :class="
+              $route.path === '/dashboard'
+                ? 'text-indigo-400'
+                : 'text-slate-400 hover:text-slate-200'
+            "
+          >
+            看板
+          </router-link>
+          <router-link
             to="/"
             class="text-sm transition-colors duration-200"
             :class="
@@ -101,11 +113,29 @@ const notificationStore = useNotificationStore();
 
 onMounted(() => {
   notificationStore.startPolling();
+  notificationStore.requestPermission();
+  window.addEventListener("beforeunload", sendOfflineBeacon);
 });
 
 onUnmounted(() => {
   notificationStore.stopPolling();
+  window.removeEventListener("beforeunload", sendOfflineBeacon);
 });
+
+// 关闭页签/浏览器时主动下线（keepalive 保证请求能在页面卸载时发出）
+function sendOfflineBeacon() {
+  const token = localStorage.getItem("token");
+  if (!token) return;
+  try {
+    fetch("/api/auth/offline", {
+      method: "POST",
+      keepalive: true,
+      headers: { Authorization: `Bearer ${token}` },
+    });
+  } catch (_) {
+    /* 忽略：页面卸载时的尽力而为请求 */
+  }
+}
 
 function handleCommand(command) {
   if (command === "logout") {

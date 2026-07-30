@@ -27,12 +27,11 @@
           class="mt-3 space-y-2"
         >
           <template v-for="att in comment.attachments" :key="att.id">
-            <el-image
+            <img
               v-if="att.fileType.startsWith('image/')"
               :src="`/api/attachments/${att.id}`"
-              :preview-src-list="[`/api/attachments/${att.id}`]"
-              class="max-w-[200px] rounded-lg"
-              fit="contain"
+              class="max-w-[200px] rounded-lg cursor-pointer hover:opacity-80 transition-opacity"
+              @click="openPreview(comment.attachments.filter(a => a.fileType.startsWith('image/')).indexOf(att))"
             />
             <a
               v-else
@@ -47,12 +46,15 @@
         </div>
       </div>
     </div>
+
+    <ImageViewer v-model:visible="previewVisible" :images="previewImages" :initial-index="previewIndex" />
   </div>
 </template>
 
 <script setup>
-import { computed } from "vue";
+import { ref, computed } from "vue";
 import { useAuthStore } from "../stores/auth";
+import ImageViewer from "./ImageViewer.vue";
 
 const props = defineProps({
   comment: {
@@ -63,6 +65,20 @@ const props = defineProps({
 
 const authStore = useAuthStore();
 const isOwn = computed(() => props.comment.userId === authStore.user?.id);
+
+// Image preview
+const previewVisible = ref(false);
+const previewIndex = ref(0);
+const previewImages = computed(() => {
+  if (!props.comment.attachments) return [];
+  return props.comment.attachments
+    .filter(a => a.fileType.startsWith("image/"))
+    .map(a => ({ url: `/api/attachments/${a.id}`, name: a.fileName }));
+});
+function openPreview(idx) {
+  previewIndex.value = idx;
+  previewVisible.value = true;
+}
 
 function formatTime(time) {
   if (!time) return "";

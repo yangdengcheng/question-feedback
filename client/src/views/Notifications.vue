@@ -20,7 +20,7 @@
 
     <div v-else-if="notifications.length === 0" class="text-center py-20">
       <el-icon :size="48" class="text-slate-600 mb-4"><Bell /></el-icon>
-      <p class="text-slate-500">暂无通知</p>
+      <p class="text-slate-500">暂无未读通知</p>
     </div>
 
     <div v-else class="space-y-3">
@@ -28,7 +28,6 @@
         v-for="item in notifications"
         :key="item.id"
         class="glass-card p-4 cursor-pointer flex items-start gap-4"
-        :class="{ 'opacity-60': item.isRead }"
         @click="goTicket(item)"
       >
         <div
@@ -45,10 +44,6 @@
             {{ formatTime(item.createdAt) }}
           </p>
         </div>
-        <span
-          v-if="!item.isRead"
-          class="w-2 h-2 rounded-full bg-indigo-500 shrink-0 mt-2"
-        ></span>
       </div>
     </div>
 
@@ -90,6 +85,7 @@ async function fetchNotifications() {
     const data = await listNotifications({
       page: page.value,
       pageSize: pageSize.value,
+      unread: "true",
     });
     notifications.value = data.rows;
     total.value = data.count;

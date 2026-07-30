@@ -34,7 +34,6 @@
       >
         <el-option label="Bug" value="bug" />
         <el-option label="使用问题" value="question" />
-        <el-option label="功能建议" value="suggestion" />
       </el-select>
       <el-select
         v-model="filters.priority"
@@ -70,20 +69,22 @@
       <TicketCard v-for="ticket in tickets" :key="ticket.id" :ticket="ticket" />
     </div>
 
-    <div v-if="total > pageSize" class="flex justify-center mt-8">
+    <div v-if="total > 0" class="flex justify-center mt-8">
       <el-pagination
         v-model:current-page="page"
-        :page-size="pageSize"
+        v-model:page-size="pageSize"
+        :page-sizes="[10, 20, 50, 100]"
         :total="total"
-        layout="prev, pager, next"
+        layout="total, sizes, prev, pager, next"
         @current-change="fetchTickets"
+        @size-change="handleSizeChange"
       />
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, reactive, watch, onMounted } from "vue";
+import { ref, reactive, watch, onMounted, onUnmounted } from "vue";
 import { listTickets } from "../api/tickets";
 import TicketCard from "../components/TicketCard.vue";
 
@@ -100,6 +101,11 @@ function handleSearch() {
   searchTimer = setTimeout(() => { fetchTickets(); }, 300);
 }
 
+function handleSizeChange() {
+  page.value = 1;
+  fetchTickets();
+}
+
 const filters = reactive({
   status: "",
   type: "",
@@ -111,12 +117,19 @@ watch(filters, () => {
   fetchTickets();
 });
 
+let pollingTimer = null;
+
 onMounted(() => {
   fetchTickets();
+  pollingTimer = setInterval(() => fetchTickets(true), 30000);
 });
 
-async function fetchTickets() {
-  loading.value = true;
+onUnmounted(() => {
+  if (pollingTimer) { clearInterval(pollingTimer); pollingTimer = null; }
+});
+
+async function fetchTickets(silent = false) {
+  if (!silent) loading.value = true;
   try {
     const params = { page: page.value, pageSize: pageSize.value, keyword: keyword.value || undefined };
     if (filters.status) params.status = filters.status;

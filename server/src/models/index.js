@@ -4,7 +4,6 @@ const Ticket = require("./Ticket");
 const Comment = require("./Comment");
 const Attachment = require("./Attachment");
 const Notification = require("./Notification");
-const NotifyRule = require("./NotifyRule");
 const TicketLog = require("./TicketLog");
 
 // User <-> Ticket (creator)
@@ -31,6 +30,10 @@ Attachment.belongsTo(Ticket, { foreignKey: "ticketId", as: "ticket" });
 Comment.hasMany(Attachment, { foreignKey: "commentId", as: "attachments" });
 Attachment.belongsTo(Comment, { foreignKey: "commentId", as: "comment" });
 
+// TicketLog <-> Attachment
+TicketLog.hasMany(Attachment, { foreignKey: "logId", as: "attachments" });
+Attachment.belongsTo(TicketLog, { foreignKey: "logId", as: "log" });
+
 // User <-> Attachment
 User.hasMany(Attachment, { foreignKey: "uploadedBy", as: "uploadedAttachments" });
 Attachment.belongsTo(User, { foreignKey: "uploadedBy", as: "uploader" });
@@ -43,10 +46,6 @@ Notification.belongsTo(User, { foreignKey: "userId", as: "user" });
 Ticket.hasMany(Notification, { foreignKey: "ticketId", as: "notifications" });
 Notification.belongsTo(Ticket, { foreignKey: "ticketId", as: "ticket" });
 
-// User <-> NotifyRule
-User.hasMany(NotifyRule, { foreignKey: "userId", as: "notifyRules" });
-NotifyRule.belongsTo(User, { foreignKey: "userId", as: "user" });
-
 // Ticket <-> TicketLog
 Ticket.hasMany(TicketLog, { foreignKey: "ticketId", as: "logs" });
 TicketLog.belongsTo(Ticket, { foreignKey: "ticketId", as: "ticket" });
@@ -55,4 +54,4 @@ TicketLog.belongsTo(User, { foreignKey: "userId", as: "operator" });
 TicketLog.belongsTo(User, { foreignKey: "fromAssigneeId", as: "fromAssignee" });
 TicketLog.belongsTo(User, { foreignKey: "toAssigneeId", as: "toAssignee" });
 
-module.exports = { sequelize, User, Ticket, Comment, Attachment, Notification, NotifyRule, TicketLog };
+module.exports = { sequelize, User, Ticket, Comment, Attachment, Notification, TicketLog };

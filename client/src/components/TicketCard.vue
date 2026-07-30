@@ -48,7 +48,6 @@ const router = useRouter();
 const typeMap = {
   bug: { label: "Bug", type: "danger" },
   question: { label: "使用问题", type: "warning" },
-  suggestion: { label: "功能建议", type: "success" },
 };
 
 const priorityMap = {

@@ -19,10 +19,9 @@
       <div v-for="file in fileList" :key="file.uid"
         class="flex items-center justify-between glass-card-static px-4 py-2 rounded-lg">
         <div class="flex items-center gap-3 min-w-0">
-          <el-image v-if="file.previewUrl" :src="file.previewUrl" :preview-src-list="[file.previewUrl]"
-            class="w-10 h-10 rounded object-cover shrink-0"
-            fit="cover"
-            preview-teleported
+          <img v-if="file.previewUrl" :src="file.previewUrl"
+            class="w-10 h-10 rounded object-cover shrink-0 cursor-pointer hover:opacity-80 transition-opacity"
+            @click="openPreview(fileList.indexOf(file))"
           />
           <el-icon v-else :size="20" class="text-slate-400 shrink-0"><Document /></el-icon>
           <span class="text-sm text-slate-300 truncate">{{ file.name }}</span>
@@ -35,6 +34,8 @@
         </el-button>
       </div>
     </div>
+
+    <ImageViewer v-model:visible="previewVisible" :images="previewImages" :initial-index="previewIndex" />
   </div>
 </template>
 
@@ -68,9 +69,10 @@ function removeGlobalListenerIfEmpty() {
 </script>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from "vue";
+import { ref, computed, onMounted, onUnmounted } from "vue";
 import { ElMessage } from "element-plus";
 import request from "../api/request";
+import ImageViewer from "./ImageViewer.vue";
 
 const MAX_SIZE = 10 * 1024 * 1024;
 const acceptTypes = ".jpg,.jpeg,.png,.gif,.mp4,.pdf,.doc,.docx,.xls,.xlsx,.zip,.rar";
@@ -162,6 +164,22 @@ async function uploadAll() {
 function reset() {
   fileList.value.forEach((f) => { if (f.previewUrl) URL.revokeObjectURL(f.previewUrl); });
   fileList.value = [];
+}
+
+// Image preview
+const previewVisible = ref(false);
+const previewIndex = ref(0);
+const previewImages = computed(() =>
+  fileList.value.filter(f => f.previewUrl).map(f => ({ url: f.previewUrl, name: f.name }))
+);
+function openPreview(fileIdx) {
+  const imageItems = fileList.value.filter(f => f.previewUrl);
+  const clickedFile = fileList.value[fileIdx];
+  const imgIdx = imageItems.indexOf(clickedFile);
+  if (imgIdx >= 0) {
+    previewIndex.value = imgIdx;
+    previewVisible.value = true;
+  }
 }
 
 defineExpose({ uploadAll, reset });
