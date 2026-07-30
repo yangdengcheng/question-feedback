@@ -134,7 +134,7 @@
         <div class="mt-8 pt-6 border-t border-indigo-500/10">
           <el-input v-model="newComment" type="textarea" :rows="3" placeholder="输入您的评论..." class="mb-3" />
           <div class="flex items-center justify-between">
-            <FileUpload v-model:attachment-ids="commentAttachmentIds" />
+            <FileUpload ref="commentFileUploadRef" />
             <button class="btn-gradient px-6 py-2 ml-4 shrink-0" :disabled="!newComment.trim() || submitting" @click="submitComment">
               {{ submitting ? "发送中..." : "发送" }}
             </button>
@@ -155,7 +155,7 @@
           <el-input v-model="transferForm.content" type="textarea" :rows="3" placeholder="请说明转交原因..." />
         </el-form-item>
         <el-form-item label="附件（可选）">
-          <FileUpload v-model:attachment-ids="transferAttachmentIds" />
+          <FileUpload ref="transferFileUploadRef" />
         </el-form-item>
       </el-form>
       <template #footer>
@@ -186,13 +186,13 @@ const ticket = ref(null);
 const comments = ref([]);
 const loading = ref(false);
 const newComment = ref("");
-const commentAttachmentIds = ref([]);
+const commentFileUploadRef = ref(null);
 const submitting = ref(false);
 const showTransferDialog = ref(false);
 const transferring = ref(false);
 const internalUsers = ref([]);
 const transferForm = ref({ toUserId: null, content: "" });
-const transferAttachmentIds = ref([]);
+const transferFileUploadRef = ref(null);
 
 const INTERNAL_ROLES = ["data_maintenance", "dev_lead", "developer", "tester", "admin"];
 const isInternal = computed(() => INTERNAL_ROLES.includes(authStore.user?.role));
@@ -274,11 +274,12 @@ async function handleTransfer() {
   if (!transferForm.value.content.trim()) { ElMessage.warning("请填写转交说明"); return; }
   transferring.value = true;
   try {
-    await transferTicket(route.params.id, { ...transferForm.value, attachmentIds: transferAttachmentIds.value });
+    const attachmentIds = transferFileUploadRef.value ? await transferFileUploadRef.value.uploadAll() : [];
+    await transferTicket(route.params.id, { ...transferForm.value, attachmentIds });
     ElMessage.success("转工单成功");
     showTransferDialog.value = false;
     transferForm.value = { toUserId: null, content: "" };
-    transferAttachmentIds.value = [];
+    if (transferFileUploadRef.value) transferFileUploadRef.value.reset();
     notificationStore.fetchUnreadCount();
     fetchTicket();
   } catch (e) {} finally { transferring.value = false; }
@@ -288,9 +289,10 @@ async function submitComment() {
   if (!newComment.value.trim()) return;
   submitting.value = true;
   try {
-    await createComment(route.params.id, { content: newComment.value, attachmentIds: commentAttachmentIds.value });
+    const attachmentIds = commentFileUploadRef.value ? await commentFileUploadRef.value.uploadAll() : [];
+    await createComment(route.params.id, { content: newComment.value, attachmentIds });
     newComment.value = "";
-    commentAttachmentIds.value = [];
+    if (commentFileUploadRef.value) commentFileUploadRef.value.reset();
     ElMessage.success("评论发送成功");
     fetchComments();
     fetchTicket();

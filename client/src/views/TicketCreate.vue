@@ -53,7 +53,7 @@
         </el-form-item>
 
         <el-form-item label="附件（可选）">
-          <FileUpload v-model:attachment-ids="attachmentIds" />
+          <FileUpload ref="fileUploadRef" />
         </el-form-item>
 
         <el-form-item>
@@ -79,8 +79,8 @@ import FileUpload from "../components/FileUpload.vue";
 
 const router = useRouter();
 const formRef = ref(null);
+const fileUploadRef = ref(null);
 const loading = ref(false);
-const attachmentIds = ref([]);
 
 const form = reactive({
   title: "",
@@ -100,9 +100,11 @@ async function handleSubmit() {
 
   loading.value = true;
   try {
+    // Upload files first (if any), then create ticket
+    const attachmentIds = fileUploadRef.value ? await fileUploadRef.value.uploadAll() : [];
     const data = await createTicket({
       ...form,
-      attachmentIds: attachmentIds.value,
+      attachmentIds,
     });
     ElMessage.success(`工单 ${data.ticketNo} 创建成功`);
     router.push(`/tickets/${data.id}`);

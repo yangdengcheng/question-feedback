@@ -1,43 +1,36 @@
 <template>
   <div class="outline-none">
-    <el-upload
-      drag
-      :auto-upload="true"
-      :http-request="handleUpload"
-      :show-file-list="false"
-      :accept="acceptTypes"
-      multiple
-    >
-      <el-icon class="el-icon--upload text-indigo-400" :size="40"><UploadFilled /></el-icon>
+    <el-upload drag :auto-upload="false" :show-file-list="false" :accept="acceptTypes" multiple
+      :on-change="handleFileSelect">
+      <el-icon class="el-icon--upload text-indigo-400" :size="40">
+        <UploadFilled />
+      </el-icon>
       <div class="el-upload__text text-slate-400">
-        拖拽文件到此处，或 <em class="text-indigo-400">点击上传</em>，或 <em class="text-cyan-400">Ctrl+V 粘贴截图</em>
+        拖拽文件到此处，或 <em class="text-indigo-400">点击选择</em>，或 <em class="text-cyan-400">Ctrl+V 粘贴截图</em>
       </div>
       <template #tip>
         <div class="el-upload__tip text-slate-500">
-          支持 jpg/png/gif/mp4/pdf/doc/docx/xls/xlsx/zip/rar，单文件不超过 10MB
+          支持 jpg/png/gif/mp4/pdf/doc/docx/xls/xlsx/zip/rar，单文件不超过 10MB。文件将在提交时上传。
         </div>
       </template>
     </el-upload>
 
     <div v-if="fileList.length > 0" class="mt-3 space-y-2">
-      <div
-        v-for="file in fileList"
-        :key="file.id"
-        class="flex items-center justify-between glass-card-static px-4 py-2 rounded-lg"
-      >
+      <div v-for="file in fileList" :key="file.uid"
+        class="flex items-center justify-between glass-card-static px-4 py-2 rounded-lg">
         <div class="flex items-center gap-3 min-w-0">
-          <el-image
-            v-if="file.fileType && file.fileType.startsWith('image/')"
-            :src="`/api/attachments/${file.id}`"
-            :preview-src-list="[`/api/attachments/${file.id}`]"
-            class="w-10 h-10 rounded object-cover"
+          <el-image v-if="file.previewUrl" :src="file.previewUrl" :preview-src-list="[file.previewUrl]"
+            class="w-10 h-10 rounded object-cover shrink-0"
             fit="cover"
+            preview-teleported
           />
-          <el-icon v-else :size="20" class="text-slate-400"><Document /></el-icon>
-          <span class="text-sm text-slate-300 truncate">{{ file.fileName }}</span>
-          <span class="text-xs text-slate-500">{{ formatSize(file.fileSize) }}</span>
+          <el-icon v-else :size="20" class="text-slate-400 shrink-0"><Document /></el-icon>
+          <span class="text-sm text-slate-300 truncate">{{ file.name }}</span>
+          <span class="text-xs text-slate-500">{{ formatSize(file.size) }}</span>
+          <el-tag v-if="file.uploaded" type="success" size="small" effect="plain">已上传</el-tag>
+          <el-tag v-else type="info" size="small" effect="plain">待上传</el-tag>
         </div>
-        <el-button type="danger" text size="small" @click="removeFile(file.id)">
+        <el-button type="danger" text size="small" @click="removeFile(file.uid)">
           <el-icon><Delete /></el-icon>
         </el-button>
       </div>
@@ -46,7 +39,7 @@
 </template>
 
 <script>
-// Module-level singleton: shared across ALL FileUpload instances
+// Module-level singleton paste handler
 const pasteHandlers = new Set();
 let globalListenerAttached = false;
 
@@ -79,24 +72,34 @@ import { ref, onMounted, onUnmounted } from "vue";
 import { ElMessage } from "element-plus";
 import request from "../api/request";
 
-const emit = defineEmits(["update:attachmentIds"]);
-
-const fileList = ref([]);
+const MAX_SIZE = 10 * 1024 * 1024;
 const acceptTypes = ".jpg,.jpeg,.png,.gif,.mp4,.pdf,.doc,.docx,.xls,.xlsx,.zip,.rar";
 
-async function handleUpload(options) {
-  const formData = new FormData();
-  formData.append("file", options.file);
-  try {
-    const data = await request.post("/upload", formData, {
-      headers: { "Content-Type": "multipart/form-data" },
-    });
-    fileList.value.push(data);
-    emitIds();
-    ElMessage.success(`${options.file.name} 上传成功`);
-  } catch (error) {
-    ElMessage.error(`${options.file.name} 上传失败`);
+// Each item: { uid, file: File, name, size, type, previewUrl, uploaded, serverId }
+const fileList = ref([]);
+let uidCounter = 0;
+
+function addFile(file) {
+  if (file.size > MAX_SIZE) {
+    ElMessage.error(`${file.name} 超过 10MB 限制`);
+    return;
   }
+  const uid = ++uidCounter;
+  const isImage = file.type.startsWith("image/");
+  fileList.value.push({
+    uid,
+    file,
+    name: file.name,
+    size: file.size,
+    type: file.type,
+    previewUrl: isImage ? URL.createObjectURL(file) : null,
+    uploaded: false,
+    serverId: null,
+  });
+}
+
+function handleFileSelect(uploadFile) {
+  addFile(uploadFile.raw);
 }
 
 function myPasteHandler(event) {
@@ -108,20 +111,20 @@ function myPasteHandler(event) {
       const file = item.getAsFile();
       if (file) {
         const namedFile = new File([file], `screenshot-${Date.now()}.png`, { type: file.type });
-        handleUpload({ file: namedFile });
+        addFile(namedFile);
       }
       break;
     }
   }
 }
 
-function removeFile(id) {
-  fileList.value = fileList.value.filter((f) => f.id !== id);
-  emitIds();
-}
-
-function emitIds() {
-  emit("update:attachmentIds", fileList.value.map((f) => f.id));
+function removeFile(uid) {
+  const idx = fileList.value.findIndex((f) => f.uid === uid);
+  if (idx !== -1) {
+    const f = fileList.value[idx];
+    if (f.previewUrl) URL.revokeObjectURL(f.previewUrl);
+    fileList.value.splice(idx, 1);
+  }
 }
 
 function formatSize(bytes) {
@@ -129,6 +132,39 @@ function formatSize(bytes) {
   if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB";
   return (bytes / (1024 * 1024)).toFixed(1) + " MB";
 }
+
+// Called by parent when submitting — uploads all pending files, returns array of server IDs
+async function uploadAll() {
+  const ids = [];
+  for (const item of fileList.value) {
+    if (item.uploaded && item.serverId) {
+      ids.push(item.serverId);
+      continue;
+    }
+    const formData = new FormData();
+    formData.append("file", item.file);
+    try {
+      const data = await request.post("/upload", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      item.uploaded = true;
+      item.serverId = data.id;
+      ids.push(data.id);
+    } catch (error) {
+      ElMessage.error(`${item.name} 上传失败`);
+      throw error; // Abort submission
+    }
+  }
+  return ids;
+}
+
+// Reset the component (clear all files)
+function reset() {
+  fileList.value.forEach((f) => { if (f.previewUrl) URL.revokeObjectURL(f.previewUrl); });
+  fileList.value = [];
+}
+
+defineExpose({ uploadAll, reset });
 
 onMounted(() => {
   pasteHandlers.add(myPasteHandler);
@@ -138,5 +174,6 @@ onMounted(() => {
 onUnmounted(() => {
   pasteHandlers.delete(myPasteHandler);
   removeGlobalListenerIfEmpty();
+  fileList.value.forEach((f) => { if (f.previewUrl) URL.revokeObjectURL(f.previewUrl); });
 });
 </script>
