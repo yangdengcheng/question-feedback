@@ -35,8 +35,9 @@ async function onUploadImg(files, callback) {
       const data = await request.post("/upload", formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
-      // filePath 形如 uploads\xxx.png，转为静态资源 url
-      const url = "/" + String(data.filePath).replace(/\\/g, "/");
+      // filePath 可能为绝对路径，取文件名拼静态资源 url（/uploads 已静态托管）
+      const name = String(data.filePath).replace(/\\/g, "/").split("/").pop();
+      const url = `/uploads/${name}`;
       urls.push({ url, alt: file.name, title: file.name });
     } catch (error) {
       ElMessage.error(`${file.name} 上传失败`);
