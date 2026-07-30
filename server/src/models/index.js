@@ -5,6 +5,9 @@ const Comment = require("./Comment");
 const Attachment = require("./Attachment");
 const Notification = require("./Notification");
 const TicketLog = require("./TicketLog");
+const ToolDict = require("./ToolDict");
+const ToolPackage = require("./ToolPackage");
+const ToolPackageVersion = require("./ToolPackageVersion");
 
 // User <-> Ticket (creator)
 User.hasMany(Ticket, { foreignKey: "userId", as: "tickets" });
@@ -54,4 +57,22 @@ TicketLog.belongsTo(User, { foreignKey: "userId", as: "operator" });
 TicketLog.belongsTo(User, { foreignKey: "fromAssigneeId", as: "fromAssignee" });
 TicketLog.belongsTo(User, { foreignKey: "toAssigneeId", as: "toAssignee" });
 
-module.exports = { sequelize, User, Ticket, Comment, Attachment, Notification, TicketLog };
+// ToolPackage <-> ToolDict (province / category)
+ToolPackage.belongsTo(ToolDict, { foreignKey: "provinceId", as: "province" });
+ToolPackage.belongsTo(ToolDict, { foreignKey: "categoryId", as: "category" });
+
+// ToolPackage <-> User (creator)
+ToolPackage.belongsTo(User, { foreignKey: "createdBy", as: "creator" });
+
+// ToolPackage <-> ToolPackageVersion
+ToolPackage.hasMany(ToolPackageVersion, { foreignKey: "packageId", as: "versions" });
+ToolPackageVersion.belongsTo(ToolPackage, { foreignKey: "packageId", as: "package" });
+ToolPackage.belongsTo(ToolPackageVersion, { foreignKey: "currentVersionId", as: "currentVersion" });
+
+// ToolPackageVersion <-> User (creator)
+ToolPackageVersion.belongsTo(User, { foreignKey: "createdBy", as: "creator" });
+
+module.exports = {
+  sequelize, User, Ticket, Comment, Attachment, Notification, TicketLog,
+  ToolDict, ToolPackage, ToolPackageVersion,
+};
