@@ -22,13 +22,13 @@ async function seed() {
 
     const devLeadPasswordHash = await bcrypt.hash("dev123", 10);
     const devLead = await User.create({
-      username: "developer",
+      username: "devlead",
       passwordHash: devLeadPasswordHash,
-      realName: "张开发",
-      email: "dev@example.com",
+      realName: "张主管",
+      email: "devlead@example.com",
       role: "dev_lead",
     });
-    console.log("开发组长创建成功: developer / dev123");
+    console.log("开发主管创建成功: devlead / dev123");
 
     const userPasswordHash = await bcrypt.hash("user123", 10);
     const user = await User.create({

@@ -17,11 +17,15 @@ request.interceptors.response.use(
   (response) => response.data,
   (error) => {
     const message = error.response?.data?.message || "请求失败";
-    if (error.response?.status === 401) {
+    const url = error.config?.url || "";
+    const isAuthRequest = url.includes("/auth/login") || url.includes("/auth/register");
+    if (error.response?.status === 401 && !isAuthRequest) {
       localStorage.removeItem("token");
       localStorage.removeItem("user");
       router.push("/login");
       ElMessage.error("登录已过期，请重新登录");
+    } else if (error.response?.status === 401 && isAuthRequest) {
+      ElMessage.error(message || "用户名或密码错误");
     } else {
       ElMessage.error(message);
     }
