@@ -6,7 +6,7 @@ const User = sequelize.define(
   {
     id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
     username: {
-      type: DataTypes.STRING(50), allowNull: false, unique: true,
+      type: DataTypes.STRING(50), allowNull: false,
       validate: { notEmpty: { msg: "用户名不能为空" }, len: { args: [2, 50], msg: "用户名长度为2-50个字符" } },
     },
     passwordHash: { type: DataTypes.STRING(255), allowNull: false, field: "password_hash" },
@@ -22,7 +22,7 @@ const User = sequelize.define(
     isActive: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: true, field: "is_active" },
     lastActiveAt: { type: DataTypes.DATE, allowNull: true, field: "last_active_at" },
   },
-  { tableName: "users" },
+  { tableName: "users", indexes: [{ unique: true, fields: ["username"] }] },
 );
 
 module.exports = User;
