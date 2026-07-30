@@ -1,5 +1,5 @@
 <template>
-  <div @paste="handlePaste" tabindex="0" class="outline-none">
+  <div class="outline-none">
     <el-upload
       drag
       :auto-upload="true"
@@ -45,6 +45,35 @@
   </div>
 </template>
 
+<script>
+// Module-level singleton: shared across ALL FileUpload instances
+const pasteHandlers = new Set();
+let globalListenerAttached = false;
+
+function globalPasteListener(event) {
+  const tag = event.target?.tagName?.toLowerCase();
+  if (tag === "input" || tag === "textarea") return;
+  const handlers = [...pasteHandlers];
+  if (handlers.length > 0) {
+    handlers[handlers.length - 1](event);
+  }
+}
+
+function ensureGlobalListener() {
+  if (!globalListenerAttached) {
+    document.addEventListener("paste", globalPasteListener);
+    globalListenerAttached = true;
+  }
+}
+
+function removeGlobalListenerIfEmpty() {
+  if (pasteHandlers.size === 0 && globalListenerAttached) {
+    document.removeEventListener("paste", globalPasteListener);
+    globalListenerAttached = false;
+  }
+}
+</script>
+
 <script setup>
 import { ref, onMounted, onUnmounted } from "vue";
 import { ElMessage } from "element-plus";
@@ -70,7 +99,7 @@ async function handleUpload(options) {
   }
 }
 
-function handlePaste(event) {
+function myPasteHandler(event) {
   const items = event.clipboardData?.items;
   if (!items) return;
   for (const item of items) {
@@ -101,12 +130,13 @@ function formatSize(bytes) {
   return (bytes / (1024 * 1024)).toFixed(1) + " MB";
 }
 
-function globalPasteHandler(event) {
-  const tag = event.target?.tagName?.toLowerCase();
-  if (tag === "input" || tag === "textarea") return;
-  handlePaste(event);
-}
+onMounted(() => {
+  pasteHandlers.add(myPasteHandler);
+  ensureGlobalListener();
+});
 
-onMounted(() => { document.addEventListener("paste", globalPasteHandler); });
-onUnmounted(() => { document.removeEventListener("paste", globalPasteHandler); });
+onUnmounted(() => {
+  pasteHandlers.delete(myPasteHandler);
+  removeGlobalListenerIfEmpty();
+});
 </script>
