@@ -6,6 +6,7 @@ const authRoutes = require("./routes/auth");
 const ticketRoutes = require("./routes/tickets");
 const commentRoutes = require("./routes/comments");
 const attachmentRoutes = require("./routes/attachments");
+const notificationRoutes = require("./routes/notifications");
 
 const app = express();
 
@@ -20,6 +21,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/tickets", ticketRoutes);
 app.use("/api/tickets/:ticketId/comments", commentRoutes);
 app.use("/api", attachmentRoutes);
+app.use("/api/notifications", notificationRoutes);
 
 app.use(errorHandler);
 
