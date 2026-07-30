@@ -1,7 +1,7 @@
 const path = require("path");
 const { Attachment } = require("../models");
 
-const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/gif", "video/mp4", "application/pdf", "application/msword", "application/vnd.openxmlformats-officedocument.wordprocessingml.document", "application/vnd.ms-excel", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "application/zip", "application/x-rar-compressed"];
+const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/gif", "video/mp4", "application/pdf", "application/msword", "application/vnd.openxmlformats-officedocument.wordprocessingml.document", "application/vnd.ms-excel", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "application/zip", "application/x-rar-compressed", "text/javascript", "application/javascript", "application/x-javascript"];
 const MAX_SIZE = 10 * 1024 * 1024;
 
 async function upload(req, res, next) {
