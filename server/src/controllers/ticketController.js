@@ -82,17 +82,19 @@ async function detail(req, res, next) {
         {
           model: TicketLog,
           as: "logs",
+          separate: true,
+          order: [["createdAt", "ASC"]],
           include: [
             { model: User, as: "operator", attributes: ["id", "realName"] },
             { model: User, as: "fromAssignee", attributes: ["id", "realName"] },
             { model: User, as: "toAssignee", attributes: ["id", "realName"] },
           ],
-          order: [["createdAt", "ASC"]],
         },
       ],
     });
     if (!ticket) return res.status(404).json({ message: "工单不存在" });
-    if (ticket.userId !== req.user.id && req.user.role !== "admin" && ticket.assigneeId !== req.user.id) {
+    const INTERNAL_ROLES = ["data_maintenance", "dev_lead", "developer", "tester", "admin"];
+    if (!INTERNAL_ROLES.includes(req.user.role) && ticket.userId !== req.user.id) {
       return res.status(403).json({ message: "无权查看此工单" });
     }
     res.json(ticket);

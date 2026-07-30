@@ -1,6 +1,7 @@
 function admin(req, res, next) {
-  if (!req.user || req.user.role !== "admin") {
-    return res.status(403).json({ message: "需要管理员权限" });
+  const allowedRoles = ["admin", "dev_lead"];
+  if (!req.user || !allowedRoles.includes(req.user.role)) {
+    return res.status(403).json({ message: "需要管理员或开发主管权限" });
   }
   next();
 }
