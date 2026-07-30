@@ -40,6 +40,17 @@
             工单
           </router-link>
           <router-link
+            to="/toolkit"
+            class="text-sm transition-colors duration-200"
+            :class="
+              $route.path.startsWith('/toolkit')
+                ? 'text-primary'
+                : 'text-slate-400 hover:text-slate-200'
+            "
+          >
+            工具包
+          </router-link>
+          <router-link
             to="/notifications"
             class="text-sm transition-colors duration-200 relative"
             :class="

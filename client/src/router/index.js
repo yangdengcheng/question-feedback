@@ -12,6 +12,8 @@ const routes = [
       { path: "dashboard", name: "Dashboard", component: () => import("../views/Dashboard.vue") },
       { path: "tickets/new", name: "TicketCreate", component: () => import("../views/TicketCreate.vue") },
       { path: "tickets/:id", name: "TicketDetail", component: () => import("../views/TicketDetail.vue") },
+      { path: "toolkit", name: "ToolkitList", component: () => import("../views/ToolkitList.vue") },
+      { path: "toolkit/:id", name: "ToolkitDetail", component: () => import("../views/ToolkitDetail.vue") },
       { path: "notifications", name: "Notifications", component: () => import("../views/Notifications.vue") },
     ],
   },

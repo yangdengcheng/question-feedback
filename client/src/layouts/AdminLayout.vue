@@ -18,6 +18,12 @@
 
         <div class="flex items-center gap-4">
           <router-link
+            to="/toolkit"
+            class="text-sm text-slate-400 hover:text-slate-200 transition-colors"
+          >
+            工具包
+          </router-link>
+          <router-link
             to="/"
             class="text-sm text-slate-400 hover:text-slate-200 transition-colors"
           >
