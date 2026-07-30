@@ -2,7 +2,7 @@
   <div>
     <div class="mb-6">
       <h1 class="text-xl font-bold text-slate-200">工单看板</h1>
-      <p class="text-sm text-slate-500 mt-1">分配给我的工单概览</p>
+      <p class="text-sm text-slate-500 mt-1">{{ authStore.isInternal ? "分配给我的工单概览" : "我创建的工单概览" }}</p>
     </div>
 
     <div v-if="loading" class="flex justify-center py-20">
@@ -32,7 +32,7 @@
       <div class="panel p-6">
         <h2 class="text-base font-semibold text-slate-200 mb-4">最近工单</h2>
         <div v-if="stats.recent.length === 0" class="text-center py-10">
-          <p class="text-slate-500 text-sm">暂无分配给您的工单</p>
+          <p class="text-slate-500 text-sm">{{ authStore.isInternal ? "暂无分配给您的工单" : "暂无工单，去创建一个吧" }}</p>
         </div>
         <div v-else class="divide-y divide-line">
           <router-link
@@ -78,11 +78,6 @@ const statCards = [
 ];
 
 onMounted(() => {
-  // 看板仅对内部角色开放
-  if (!authStore.isInternal) {
-    router.replace("/");
-    return;
-  }
   fetchStats();
 });
 

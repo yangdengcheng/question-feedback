@@ -17,7 +17,6 @@
 
         <nav class="flex items-center gap-6">
           <router-link
-            v-if="authStore.isInternal"
             to="/dashboard"
             class="text-sm transition-colors duration-200"
             :class="
