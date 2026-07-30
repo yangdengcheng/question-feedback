@@ -5,6 +5,7 @@ const errorHandler = require("./middleware/errorHandler");
 const authRoutes = require("./routes/auth");
 const ticketRoutes = require("./routes/tickets");
 const commentRoutes = require("./routes/comments");
+const attachmentRoutes = require("./routes/attachments");
 
 const app = express();
 
@@ -18,6 +19,7 @@ app.get("/api/health", (req, res) => { res.json({ status: "ok" }); });
 app.use("/api/auth", authRoutes);
 app.use("/api/tickets", ticketRoutes);
 app.use("/api/tickets/:ticketId/comments", commentRoutes);
+app.use("/api", attachmentRoutes);
 
 app.use(errorHandler);
 
