@@ -1,14 +1,14 @@
 <template>
   <div class="min-h-screen flex flex-col">
     <header
-      class="glass-card-static border-b border-indigo-500/20 rounded-none"
+      class="panel border-b border-line rounded-none"
     >
       <div
         class="max-w-full mx-auto px-6 h-16 flex items-center justify-between"
       >
         <div class="flex items-center gap-3">
           <div
-            class="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-cyan-500 flex items-center justify-center"
+            class="w-8 h-8 rounded-lg bg-primary text-[#1a1204] flex items-center justify-center"
           >
             <el-icon :size="18" color="#fff"><ChatDotRound /></el-icon>
           </div>
@@ -27,7 +27,7 @@
             <span
               class="flex items-center gap-2 cursor-pointer text-slate-300 hover:text-slate-100 transition-colors"
             >
-              <el-avatar :size="32" class="bg-indigo-600">
+              <el-avatar :size="32" class="bg-primary text-[#1a1204] font-bold">
                 {{ authStore.user?.realName?.charAt(0) || "A" }}
               </el-avatar>
               <span class="text-sm">{{ authStore.user?.realName }}</span>
@@ -47,14 +47,14 @@
 
     <div class="flex flex-1">
       <aside
-        class="w-56 glass-card-static rounded-none border-r border-indigo-500/20 border-t-0 border-b-0 border-l-0"
+        class="w-56 panel rounded-none border-r border-line border-t-0 border-b-0 border-l-0"
       >
         <el-menu
           :default-active="activeMenu"
           router
           background-color="transparent"
           text-color="#94a3b8"
-          active-text-color="#818cf8"
+          active-text-color="#fbbf24"
           class="border-none"
         >
           <el-menu-item index="/admin/tickets">

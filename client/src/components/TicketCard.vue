@@ -1,8 +1,8 @@
 <template>
-  <div class="glass-card p-5 cursor-pointer" @click="goDetail">
+  <div class="panel panel-hover p-5 cursor-pointer" @click="goDetail">
     <div class="flex items-start justify-between mb-3">
       <div class="flex items-center gap-3">
-        <span class="text-xs text-slate-500 font-mono">{{
+        <span class="text-xs text-slate-500 font-mono tnum">{{
           ticket.ticketNo
         }}</span>
         <el-tag size="small" effect="plain" :type="typeTagType">{{

@@ -3,13 +3,13 @@
     <div class="flex items-center justify-between mb-6">
       <h1 class="text-xl font-bold text-slate-200">我的工单</h1>
       <router-link to="/tickets/new">
-        <button class="btn-gradient">
+        <button class="btn-accent">
           <el-icon class="mr-1"><Plus /></el-icon>新建工单
         </button>
       </router-link>
     </div>
 
-    <div class="glass-card-static p-4 mb-6 flex items-center gap-4 flex-wrap">
+    <div class="panel p-4 mb-6 flex items-center gap-4 flex-wrap">
       <el-input v-model="keyword" placeholder="搜索工单标题..." clearable class="w-64" @input="handleSearch" @clear="handleSearch">
         <template #prefix><el-icon><Search /></el-icon></template>
       </el-input>
@@ -49,7 +49,7 @@
     </div>
 
     <div v-if="loading" class="flex justify-center py-20">
-      <el-icon class="is-loading text-indigo-400" :size="32"
+      <el-icon class="is-loading text-primary" :size="32"
         ><Loading
       /></el-icon>
     </div>
@@ -61,7 +61,7 @@
         遇到问题？提交一个工单让我们帮您解决
       </p>
       <router-link to="/tickets/new">
-        <button class="btn-gradient">新建工单</button>
+        <button class="btn-accent">新建工单</button>
       </router-link>
     </div>
 

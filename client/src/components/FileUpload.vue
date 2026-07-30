@@ -2,11 +2,11 @@
   <div class="outline-none">
     <el-upload drag :auto-upload="false" :show-file-list="false" :accept="acceptTypes" multiple
       :on-change="handleFileSelect">
-      <el-icon class="el-icon--upload text-indigo-400" :size="40">
+      <el-icon class="el-icon--upload text-primary" :size="40">
         <UploadFilled />
       </el-icon>
       <div class="el-upload__text text-slate-400">
-        拖拽文件到此处，或 <em class="text-indigo-400">点击选择</em>，或 <em class="text-cyan-400">Ctrl+V 粘贴截图</em>
+        拖拽文件到此处，或 <em class="text-primary">点击选择</em>，或 <em class="text-st-processing">Ctrl+V 粘贴截图</em>
       </div>
       <template #tip>
         <div class="el-upload__tip text-slate-500">
@@ -17,7 +17,7 @@
 
     <div v-if="fileList.length > 0" class="mt-3 space-y-2">
       <div v-for="file in fileList" :key="file.uid"
-        class="flex items-center justify-between glass-card-static px-4 py-2 rounded-lg">
+        class="flex items-center justify-between panel px-4 py-2 rounded-lg">
         <div class="flex items-center gap-3 min-w-0">
           <img v-if="file.previewUrl" :src="file.previewUrl"
             class="w-10 h-10 rounded object-cover shrink-0 cursor-pointer hover:opacity-80 transition-opacity"

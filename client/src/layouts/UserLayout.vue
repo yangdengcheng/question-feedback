@@ -1,14 +1,14 @@
 <template>
   <div class="min-h-screen flex flex-col">
     <header
-      class="glass-card-static border-b border-indigo-500/20 rounded-none"
+      class="panel border-b border-line rounded-none"
     >
       <div
         class="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between"
       >
         <div class="flex items-center gap-3">
           <div
-            class="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-cyan-500 flex items-center justify-center"
+            class="w-8 h-8 rounded-lg bg-primary text-[#1a1204] flex items-center justify-center"
           >
             <el-icon :size="18" color="#fff"><ChatDotRound /></el-icon>
           </div>
@@ -22,7 +22,7 @@
             class="text-sm transition-colors duration-200"
             :class="
               $route.path === '/dashboard'
-                ? 'text-indigo-400'
+                ? 'text-primary'
                 : 'text-slate-400 hover:text-slate-200'
             "
           >
@@ -33,7 +33,7 @@
             class="text-sm transition-colors duration-200"
             :class="
               $route.path === '/'
-                ? 'text-indigo-400'
+                ? 'text-primary'
                 : 'text-slate-400 hover:text-slate-200'
             "
           >
@@ -44,7 +44,7 @@
             class="text-sm transition-colors duration-200 relative"
             :class="
               $route.path === '/notifications'
-                ? 'text-indigo-400'
+                ? 'text-primary'
                 : 'text-slate-400 hover:text-slate-200'
             "
           >
@@ -66,7 +66,7 @@
             class="text-sm transition-colors duration-200"
             :class="
               $route.path.startsWith('/admin')
-                ? 'text-indigo-400'
+                ? 'text-primary'
                 : 'text-slate-400 hover:text-slate-200'
             "
           >
@@ -78,7 +78,7 @@
           <span
             class="flex items-center gap-2 cursor-pointer text-slate-300 hover:text-slate-100 transition-colors"
           >
-            <el-avatar :size="32" class="bg-indigo-600">
+            <el-avatar :size="32" class="bg-primary text-[#1a1204] font-bold">
               {{ authStore.user?.realName?.charAt(0) || "U" }}
             </el-avatar>
             <span class="text-sm"><span class="w-2 h-2 rounded-full bg-green-400 inline-block mr-1"></span>{{ authStore.user?.realName }}</span>

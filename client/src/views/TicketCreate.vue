@@ -10,7 +10,7 @@
       <h1 class="text-xl font-bold text-slate-200 mt-2">新建工单</h1>
     </div>
 
-    <div class="glass-card-static p-8">
+    <div class="panel p-8">
       <el-form
         ref="formRef"
         :model="form"
@@ -59,7 +59,7 @@
         <el-form-item>
           <button
             type="submit"
-            class="btn-gradient px-8 py-3"
+            class="btn-accent px-8 py-3"
             :disabled="loading"
           >
             {{ loading ? "提交中..." : "提交工单" }}

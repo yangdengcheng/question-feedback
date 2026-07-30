@@ -3,7 +3,7 @@
     <div class="w-full max-w-md">
       <div class="text-center mb-8">
         <div
-          class="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-indigo-500 to-cyan-500 flex items-center justify-center"
+          class="w-16 h-16 mx-auto mb-4 rounded-lg bg-primary text-[#1a1204] flex items-center justify-center"
         >
           <el-icon :size="32" color="#fff"><ChatDotRound /></el-icon>
         </div>
@@ -11,7 +11,7 @@
         <p class="text-slate-500 mt-2 text-sm">创建新账号</p>
       </div>
 
-      <div class="glass-card-static p-8">
+      <div class="panel p-8">
         <el-form
           ref="formRef"
           :model="form"
@@ -72,7 +72,7 @@
           <el-form-item>
             <button
               type="submit"
-              class="btn-gradient w-full py-3 text-base font-medium"
+              class="btn-accent w-full py-3 text-base font-medium"
               :disabled="loading"
             >
               {{ loading ? "注册中..." : "注 册" }}
@@ -84,7 +84,7 @@
           已有账号？
           <router-link
             to="/login"
-            class="text-indigo-400 hover:text-indigo-300 transition-colors"
+            class="text-primary hover:text-[#fcd34d] transition-colors"
           >
             立即登录
           </router-link>

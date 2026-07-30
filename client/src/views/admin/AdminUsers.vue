@@ -2,12 +2,12 @@
   <div>
     <div class="flex items-center justify-between mb-6">
       <h1 class="text-xl font-bold text-slate-200">用户管理</h1>
-      <button class="btn-gradient px-4 py-2 text-sm" @click="showCreateDialog = true">
+      <button class="btn-accent px-4 py-2 text-sm" @click="showCreateDialog = true">
         <el-icon class="mr-1"><Plus /></el-icon>新建用户
       </button>
     </div>
 
-    <div class="glass-card-static p-4">
+    <div class="panel p-4">
       <el-table :data="users" v-loading="loading" stripe>
         <el-table-column prop="username" label="用户名" width="130" />
         <el-table-column prop="realName" label="姓名" width="100" />

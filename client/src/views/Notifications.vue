@@ -13,7 +13,7 @@
     </div>
 
     <div v-if="loading" class="flex justify-center py-20">
-      <el-icon class="is-loading text-indigo-400" :size="32"
+      <el-icon class="is-loading text-primary" :size="32"
         ><Loading
       /></el-icon>
     </div>
@@ -27,7 +27,7 @@
       <div
         v-for="item in notifications"
         :key="item.id"
-        class="glass-card p-4 cursor-pointer flex items-start gap-4"
+        class="panel panel-hover p-4 cursor-pointer flex items-start gap-4"
         @click="goTicket(item)"
       >
         <div
@@ -125,8 +125,8 @@ function iconName(type) {
 
 function iconBgClass(type) {
   const map = {
-    new_ticket: "bg-indigo-600",
-    new_comment: "bg-cyan-600",
+    new_ticket: "bg-st-pending",
+    new_comment: "bg-st-processing",
     status_change: "bg-amber-600",
     assigned: "bg-green-600",
   };

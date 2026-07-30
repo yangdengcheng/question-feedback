@@ -2,7 +2,7 @@
   <div>
     <h1 class="text-xl font-bold text-slate-200 mb-6">工单管理</h1>
 
-    <div class="glass-card-static p-4 mb-6 flex items-center gap-4 flex-wrap">
+    <div class="panel p-4 mb-6 flex items-center gap-4 flex-wrap">
       <el-input
         v-model="filters.ticketNo"
         placeholder="工单编号"
@@ -47,7 +47,7 @@
       </el-select>
     </div>
 
-    <div class="glass-card-static p-4">
+    <div class="panel p-4">
       <el-table :data="tickets" v-loading="loading" stripe :row-class-name="rowClassName">
         <el-table-column prop="ticketNo" label="工单号" width="160" />
         <el-table-column

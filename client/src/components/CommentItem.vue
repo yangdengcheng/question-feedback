@@ -8,7 +8,7 @@
         <span class="text-xs font-medium text-slate-400">{{
           comment.author?.realName
         }}</span>
-        <span class="text-xs text-slate-600">{{
+        <span class="text-xs text-slate-600 tnum">{{
           formatTime(comment.createdAt)
         }}</span>
       </div>
@@ -16,8 +16,8 @@
         class="rounded-xl px-4 py-3 text-sm leading-relaxed"
         :class="
           isOwn
-            ? 'bg-indigo-600/20 border border-indigo-500/30 text-slate-200'
-            : 'glass-card-static text-slate-300'
+            ? 'bg-primary/10 border border-primary/30 text-slate-200'
+            : 'panel text-slate-300'
         "
       >
         <p class="whitespace-pre-wrap">{{ comment.content }}</p>
@@ -37,7 +37,7 @@
               v-else
               :href="`/api/attachments/${att.id}`"
               target="_blank"
-              class="flex items-center gap-2 text-xs text-indigo-400 hover:text-indigo-300 transition-colors"
+              class="flex items-center gap-2 text-xs text-primary hover:text-[#fcd34d] transition-colors"
             >
               <el-icon><Document /></el-icon>
               {{ att.fileName }}
