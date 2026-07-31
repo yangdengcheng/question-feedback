@@ -27,6 +27,8 @@
   --accent-deep: #b45309;
   --accent-soft: rgba(251, 191, 36, 0.1);
   --accent-glow: rgba(251, 191, 36, 0.32);
+  --accent-text: #fbbf24;          /* 新增：文字/链接用，暗色与 --accent 同值 */
+  --accent-border: rgba(251, 191, 36, 0.35); /* 新增：强调边框 alpha 变量 */
 
   /* 状态色 */
   --st-pending: #f59e0b;
@@ -53,6 +55,84 @@
     radial-gradient(900px 500px at 85% -10%, rgba(251, 191, 36, 0.05), transparent 60%),
     linear-gradient(rgba(148, 163, 184, 0.045) 1px, transparent 1px),
     linear-gradient(90deg, rgba(148, 163, 184, 0.045) 1px, transparent 1px);
+
+  /* 新增：输入框/遮罩/滚动条（暗色值） */
+  --input-bg: rgba(11, 17, 32, 0.6);
+  --autofill-bg: rgba(11, 17, 32, 0.6);
+  --table-header-bg: rgba(26, 36, 56, 0.55);
+  --mask-bg: rgba(4, 8, 18, 0.7);
+  --scrollbar-thumb: rgba(148, 163, 184, 0.22);
+  --scrollbar-thumb-hover: rgba(148, 163, 184, 0.38);
+}
+
+/* 显式暗色主题（与 :root 兜底值相同，供 data-theme="dark" 使用） */
+:root[data-theme="dark"] {
+  --ink: #0b1120;
+  --surface: #121a2b;
+  --surface-2: #1a2438;
+  --line: rgba(148, 163, 184, 0.14);
+  --line-strong: rgba(148, 163, 184, 0.24);
+  --text: #e6edf6;
+  --text-2: #9aa7bc;
+  --text-3: #5c6b82;
+  --accent: #fbbf24;
+  --accent-strong: #f59e0b;
+  --accent-deep: #b45309;
+  --accent-soft: rgba(251, 191, 36, 0.1);
+  --accent-glow: rgba(251, 191, 36, 0.32);
+  --accent-text: #fbbf24;
+  --accent-border: rgba(251, 191, 36, 0.35);
+  --st-pending: #f59e0b;
+  --st-processing: #38bdf8;
+  --st-resolved: #34d399;
+  --st-closed: #64748b;
+  --shadow-panel: 0 1px 0 rgba(255, 255, 255, 0.03) inset, 0 8px 24px rgba(2, 6, 16, 0.45);
+  --shadow-pop: 0 12px 32px rgba(2, 6, 16, 0.6);
+  --grid-bg:
+    radial-gradient(900px 500px at 85% -10%, rgba(251, 191, 36, 0.05), transparent 60%),
+    linear-gradient(rgba(148, 163, 184, 0.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(148, 163, 184, 0.045) 1px, transparent 1px);
+  --input-bg: rgba(11, 17, 32, 0.6);
+  --autofill-bg: rgba(11, 17, 32, 0.6);
+  --table-header-bg: rgba(26, 36, 56, 0.55);
+  --mask-bg: rgba(4, 8, 18, 0.7);
+  --scrollbar-thumb: rgba(148, 163, 184, 0.22);
+  --scrollbar-thumb-hover: rgba(148, 163, 184, 0.38);
+}
+
+/* 浅色主题：白底工程操作台 */
+:root[data-theme="light"] {
+  --ink: #f4f6fa;
+  --surface: #ffffff;
+  --surface-2: #f8fafc;
+  --line: rgba(15, 23, 42, 0.08);
+  --line-strong: rgba(15, 23, 42, 0.16);
+  --text: #0f172a;
+  --text-2: #475569;
+  --text-3: #94a3b8;
+  --accent: #f59e0b;
+  --accent-strong: #d97706;
+  --accent-deep: #92400e;
+  --accent-soft: rgba(245, 158, 11, 0.1);
+  --accent-glow: rgba(245, 158, 11, 0.24);
+  --accent-text: #b45309;
+  --accent-border: rgba(245, 158, 11, 0.4);
+  --st-pending: #d97706;
+  --st-processing: #0284c7;
+  --st-resolved: #059669;
+  --st-closed: #64748b;
+  --shadow-panel: 0 1px 3px rgba(15, 23, 42, 0.08), 0 4px 16px rgba(15, 23, 42, 0.06);
+  --shadow-pop: 0 8px 24px rgba(15, 23, 42, 0.12);
+  --grid-bg:
+    radial-gradient(900px 500px at 85% -10%, rgba(245, 158, 11, 0.04), transparent 60%),
+    linear-gradient(rgba(15, 23, 42, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(15, 23, 42, 0.04) 1px, transparent 1px);
+  --input-bg: rgba(248, 250, 252, 0.9);
+  --autofill-bg: rgba(255, 255, 255, 0.95);
+  --table-header-bg: rgba(248, 250, 252, 0.9);
+  --mask-bg: rgba(15, 23, 42, 0.4);
+  --scrollbar-thumb: rgba(15, 23, 42, 0.18);
+  --scrollbar-thumb-hover: rgba(15, 23, 42, 0.32);
 }
 
 /* ============================ 全局基底 ============================ */
@@ -96,11 +176,11 @@ body {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(148, 163, 184, 0.22);
+  background: var(--scrollbar-thumb);
   border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(148, 163, 184, 0.38);
+  background: var(--scrollbar-thumb-hover);
 }
 
 /* ============================ 排版 ============================ */
@@ -225,7 +305,7 @@ code, kbd, pre, samp {
 }
 .btn-ghost:hover {
   border-color: var(--accent);
-  color: var(--accent);
+  color: var(--accent-text);
   background: var(--accent-soft);
 }
 
@@ -237,7 +317,7 @@ code, kbd, pre, samp {
   padding: 0 12px;
   border: 1px solid var(--line-strong);
   border-radius: var(--radius-m);
-  background: rgba(11, 17, 32, 0.6);
+  background: var(--input-bg);
   color: var(--text);
   font-size: 14px;
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
@@ -309,8 +389,9 @@ textarea.input-base {
    在此统一覆盖即可完成整体换肤，无需替换任何组件。
    ============================================================ */
 
-:root {
-  /* 主色：琥珀，及色阶 */
+/* Element Plus 暗色覆盖 */
+:root,
+:root[data-theme="dark"] {
   --el-color-primary: #fbbf24;
   --el-color-primary-light-3: #fcd34d;
   --el-color-primary-light-5: rgba(251, 191, 36, 0.42);
@@ -318,8 +399,6 @@ textarea.input-base {
   --el-color-primary-light-8: rgba(251, 191, 36, 0.14);
   --el-color-primary-light-9: rgba(251, 191, 36, 0.08);
   --el-color-primary-dark-2: #f59e0b;
-
-  /* 功能色 */
   --el-color-success: #34d399;
   --el-color-success-light-9: rgba(52, 211, 153, 0.1);
   --el-color-warning: #f59e0b;
@@ -328,22 +407,16 @@ textarea.input-base {
   --el-color-danger-light-9: rgba(248, 113, 113, 0.1);
   --el-color-info: #64748b;
   --el-color-info-light-9: rgba(100, 116, 139, 0.12);
-
-  /* 文本 */
   --el-text-color-primary: #e6edf6;
   --el-text-color-regular: #c3cedd;
   --el-text-color-secondary: #9aa7bc;
   --el-text-color-placeholder: #5c6b82;
   --el-text-color-disabled: #475569;
-
-  /* 边框 */
   --el-border-color: rgba(148, 163, 184, 0.18);
   --el-border-color-light: rgba(148, 163, 184, 0.14);
   --el-border-color-lighter: rgba(148, 163, 184, 0.1);
   --el-border-color-extra-light: rgba(148, 163, 184, 0.07);
   --el-border-color-hover: rgba(251, 191, 36, 0.55);
-
-  /* 填充 / 背景 */
   --el-fill-color: #1a2438;
   --el-fill-color-light: #162032;
   --el-fill-color-lighter: #121a2b;
@@ -352,26 +425,64 @@ textarea.input-base {
   --el-bg-color: #121a2b;
   --el-bg-color-page: #0b1120;
   --el-bg-color-overlay: #162032;
-
-  /* 遮罩 */
   --el-mask-color: rgba(4, 8, 18, 0.72);
   --el-mask-color-extra-light: rgba(4, 8, 18, 0.4);
-
-  /* 圆角：收紧 */
   --el-border-radius-base: 6px;
   --el-border-radius-small: 4px;
   --el-border-radius-round: 16px;
-
-  /* 字体 */
   --el-font-family: var(--font-body);
   --el-font-size-base: 13px;
-
-  /* 阴影 */
   --el-box-shadow: var(--shadow-pop);
   --el-box-shadow-light: 0 6px 20px rgba(2, 6, 16, 0.5);
   --el-box-shadow-lighter: 0 4px 12px rgba(2, 6, 16, 0.4);
+  --el-transition-duration: 0.18s;
+}
 
-  /* 过渡 */
+/* Element Plus 浅色覆盖 */
+:root[data-theme="light"] {
+  --el-color-primary: #f59e0b;
+  --el-color-primary-light-3: #fbbf24;
+  --el-color-primary-light-5: rgba(245, 158, 11, 0.42);
+  --el-color-primary-light-7: rgba(245, 158, 11, 0.24);
+  --el-color-primary-light-8: rgba(245, 158, 11, 0.14);
+  --el-color-primary-light-9: rgba(245, 158, 11, 0.08);
+  --el-color-primary-dark-2: #d97706;
+  --el-color-success: #059669;
+  --el-color-success-light-9: rgba(5, 150, 105, 0.1);
+  --el-color-warning: #d97706;
+  --el-color-warning-light-9: rgba(217, 119, 6, 0.1);
+  --el-color-danger: #dc2626;
+  --el-color-danger-light-9: rgba(220, 38, 38, 0.1);
+  --el-color-info: #64748b;
+  --el-color-info-light-9: rgba(100, 116, 139, 0.1);
+  --el-text-color-primary: #0f172a;
+  --el-text-color-regular: #334155;
+  --el-text-color-secondary: #475569;
+  --el-text-color-placeholder: #94a3b8;
+  --el-text-color-disabled: #cbd5e1;
+  --el-border-color: rgba(15, 23, 42, 0.14);
+  --el-border-color-light: rgba(15, 23, 42, 0.1);
+  --el-border-color-lighter: rgba(15, 23, 42, 0.07);
+  --el-border-color-extra-light: rgba(15, 23, 42, 0.05);
+  --el-border-color-hover: rgba(245, 158, 11, 0.55);
+  --el-fill-color: #f8fafc;
+  --el-fill-color-light: #f1f5f9;
+  --el-fill-color-lighter: #f8fafc;
+  --el-fill-color-extra-light: #ffffff;
+  --el-fill-color-blank: #ffffff;
+  --el-bg-color: #ffffff;
+  --el-bg-color-page: #f4f6fa;
+  --el-bg-color-overlay: #ffffff;
+  --el-mask-color: rgba(15, 23, 42, 0.4);
+  --el-mask-color-extra-light: rgba(15, 23, 42, 0.2);
+  --el-border-radius-base: 6px;
+  --el-border-radius-small: 4px;
+  --el-border-radius-round: 16px;
+  --el-font-family: var(--font-body);
+  --el-font-size-base: 13px;
+  --el-box-shadow: var(--shadow-pop);
+  --el-box-shadow-light: 0 4px 16px rgba(15, 23, 42, 0.1);
+  --el-box-shadow-lighter: 0 2px 8px rgba(15, 23, 42, 0.08);
   --el-transition-duration: 0.18s;
 }
 
@@ -393,10 +504,10 @@ textarea.input-base {
   letter-spacing: 0.02em;
 }
 .el-button--primary.is-plain {
-  --el-button-text-color: var(--accent);
+  --el-button-text-color: var(--accent-text);
   --el-button-bg-color: var(--accent-soft);
   --el-button-border-color: rgba(251, 191, 36, 0.4);
-  --el-button-hover-text-color: #fcd34d;
+  --el-button-hover-text-color: var(--accent-text);
   --el-button-hover-bg-color: rgba(251, 191, 36, 0.16);
   --el-button-hover-border-color: var(--accent);
 }
@@ -412,14 +523,14 @@ textarea.input-base {
   --el-button-text-color: var(--text-2);
   --el-button-hover-bg-color: var(--accent-soft);
   --el-button-hover-border-color: var(--accent);
-  --el-button-hover-text-color: var(--accent);
+  --el-button-hover-text-color: var(--accent-text);
 }
 
 /* 输入类组件：统一深色底 + 琥珀聚焦环 */
 .el-input__wrapper,
 .el-textarea__inner,
 .el-select__wrapper {
-  background-color: rgba(11, 17, 32, 0.6) !important;
+  background-color: var(--input-bg) !important;
   box-shadow: 0 0 0 1px var(--line-strong) inset !important;
 }
 .el-input__wrapper:hover,
@@ -455,8 +566,8 @@ select:-webkit-autofill {
   color: var(--text) !important;
   caret-color: var(--text);
   background-color: transparent !important;
-  -webkit-box-shadow: 0 0 0 1000px rgba(11, 17, 32, 0.6) inset !important;
-  box-shadow: 0 0 0 1000px rgba(11, 17, 32, 0.6) inset !important;
+  -webkit-box-shadow: 0 0 0 1000px var(--autofill-bg) inset !important;
+  box-shadow: 0 0 0 1000px var(--autofill-bg) inset !important;
   /* 延迟浏览器套用自动填充背景，配合上面的 inset 阴影双保险 */
   transition: background-color 9999s ease-in-out 0s,
     -webkit-text-fill-color 9999s ease-in-out 0s;
@@ -482,10 +593,10 @@ input:-internal-autofill-selected {
 .el-select-dropdown__item.hover,
 .el-select-dropdown__item:hover {
   background: var(--accent-soft) !important;
-  color: var(--accent);
+  color: var(--accent-text);
 }
 .el-select-dropdown__item.selected {
-  color: var(--accent) !important;
+  color: var(--accent-text) !important;
   font-weight: 700;
 }
 
@@ -493,7 +604,7 @@ input:-internal-autofill-selected {
 .el-table {
   --el-table-bg-color: transparent;
   --el-table-tr-bg-color: transparent;
-  --el-table-header-bg-color: rgba(26, 36, 56, 0.55);
+  --el-table-header-bg-color: var(--table-header-bg);
   --el-table-row-hover-bg-color: rgba(251, 191, 36, 0.045);
   --el-table-border-color: var(--line);
   --el-table-text-color: var(--text-2);
@@ -510,7 +621,7 @@ input:-internal-autofill-selected {
   --el-pagination-bg-color: transparent;
   --el-pagination-text-color: var(--text-2);
   --el-pagination-button-disabled-bg-color: transparent;
-  --el-pagination-hover-color: var(--accent);
+  --el-pagination-hover-color: var(--accent-text);
   font-family: var(--font-mono);
 }
 .el-pager li {
@@ -520,7 +631,7 @@ input:-internal-autofill-selected {
 }
 .el-pager li.is-active {
   background: var(--accent-soft) !important;
-  color: var(--accent) !important;
+  color: var(--accent-text) !important;
   font-weight: 700;
 }
 
@@ -585,7 +696,7 @@ input:-internal-autofill-selected {
   --el-menu-bg-color: transparent;
   --el-menu-text-color: var(--text-2);
   --el-menu-hover-bg-color: var(--accent-soft);
-  --el-menu-active-color: var(--accent);
+  --el-menu-active-color: var(--accent-text);
   border-right: none !important;
 }
 .el-menu-item.is-active {
@@ -611,7 +722,7 @@ input:-internal-autofill-selected {
 }
 .el-radio__input.is-checked + .el-radio__label,
 .el-checkbox__input.is-checked + .el-checkbox__label {
-  color: var(--accent);
+  color: var(--accent-text);
 }
 .el-switch.is-checked .el-switch__core {
   background: var(--accent);
@@ -620,7 +731,7 @@ input:-internal-autofill-selected {
 
 /* 上传 */
 .el-upload-dragger {
-  background: rgba(11, 17, 32, 0.5) !important;
+  background: var(--input-bg) !important;
   border: 1px dashed var(--line-strong) !important;
   border-radius: var(--radius-m) !important;
   transition: border-color 0.15s ease, background 0.15s ease;
@@ -632,7 +743,7 @@ input:-internal-autofill-selected {
 
 /* 加载 */
 .el-loading-mask {
-  background-color: rgba(4, 8, 18, 0.7) !important;
+  background-color: var(--mask-bg) !important;
 }
 .el-loading-spinner .path {
   stroke: var(--accent) !important;
