@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" class="dark">
+<html lang="zh-CN">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
@@ -9,6 +9,17 @@
       href="https://fonts.loli.net/css2?family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap"
       rel="stylesheet"
     />
+    <script>
+      // 防闪烁：Vue 挂载前读取记忆主题并设置 data-theme（缺省暗色）
+      (function () {
+        var t = "dark";
+        try {
+          var s = localStorage.getItem("theme");
+          if (s === "light" || s === "dark") t = s;
+        } catch (e) {}
+        document.documentElement.dataset.theme = t;
+      })();
+    </script>
     <title>问题反馈中心</title>
   </head>
   <body>

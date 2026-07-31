@@ -5,29 +5,32 @@ export default {
   theme: {
     extend: {
       colors: {
-        // 方案 C · 信号橙
-        primary: "#fbbf24",
-        "primary-strong": "#f59e0b",
-        accent: "#fbbf24",
+        // 方案 C · 信号橙（接 CSS 变量，随主题切换）
+        primary: "var(--accent)",
+        "primary-strong": "var(--accent-strong)",
+        accent: "var(--accent)",
+        "accent-text": "var(--accent-text)",
+        "accent-soft": "var(--accent-soft)",
+        "accent-border": "var(--accent-border)",
         // 基底
-        ink: "#0b1120",
+        ink: "var(--ink)",
         surface: {
-          DEFAULT: "#121a2b",
-          2: "#1a2438",
+          DEFAULT: "var(--surface)",
+          2: "var(--surface-2)",
         },
         line: {
-          DEFAULT: "rgba(148,163,184,0.14)",
-          strong: "rgba(148,163,184,0.24)",
+          DEFAULT: "var(--line)",
+          strong: "var(--line-strong)",
         },
         // 文本
-        "ink-text": "#e6edf6",
-        "ink-text-2": "#9aa7bc",
-        "ink-text-3": "#5c6b82",
+        "ink-text": "var(--text)",
+        "ink-text-2": "var(--text-2)",
+        "ink-text-3": "var(--text-3)",
         // 状态色
-        "st-pending": "#f59e0b",
-        "st-processing": "#38bdf8",
-        "st-resolved": "#34d399",
-        "st-closed": "#64748b",
+        "st-pending": "var(--st-pending)",
+        "st-processing": "var(--st-processing)",
+        "st-resolved": "var(--st-resolved)",
+        "st-closed": "var(--st-closed)",
       },
       fontFamily: {
         disp: ['"Space Grotesk"', '"PingFang SC"', '"Microsoft YaHei"', "sans-serif"],
