@@ -63,6 +63,7 @@
   --mask-bg: rgba(4, 8, 18, 0.7);
   --scrollbar-thumb: rgba(148, 163, 184, 0.22);
   --scrollbar-thumb-hover: rgba(148, 163, 184, 0.38);
+  --button-default-bg: rgba(26, 36, 56, 0.6);
 }
 
 /* 显式暗色主题（与 :root 兜底值相同，供 data-theme="dark" 使用） */
@@ -98,6 +99,7 @@
   --mask-bg: rgba(4, 8, 18, 0.7);
   --scrollbar-thumb: rgba(148, 163, 184, 0.22);
   --scrollbar-thumb-hover: rgba(148, 163, 184, 0.38);
+  --button-default-bg: rgba(26, 36, 56, 0.6);
 }
 
 /* 浅色主题：白底工程操作台 */
@@ -133,6 +135,7 @@
   --mask-bg: rgba(15, 23, 42, 0.4);
   --scrollbar-thumb: rgba(15, 23, 42, 0.18);
   --scrollbar-thumb-hover: rgba(15, 23, 42, 0.32);
+  --button-default-bg: #ffffff;
 }
 
 /* ============================ 全局基底 ============================ */
@@ -506,9 +509,9 @@ textarea.input-base {
 .el-button--primary.is-plain {
   --el-button-text-color: var(--accent-text);
   --el-button-bg-color: var(--accent-soft);
-  --el-button-border-color: rgba(251, 191, 36, 0.4);
+  --el-button-border-color: var(--accent-border);
   --el-button-hover-text-color: var(--accent-text);
-  --el-button-hover-bg-color: rgba(251, 191, 36, 0.16);
+  --el-button-hover-bg-color: var(--accent-soft);
   --el-button-hover-border-color: var(--accent);
 }
 .el-button--primary:focus-visible {
@@ -518,7 +521,7 @@ textarea.input-base {
 
 /* 默认按钮：深色实底描边 */
 .el-button--default {
-  --el-button-bg-color: rgba(26, 36, 56, 0.6);
+  --el-button-bg-color: var(--button-default-bg);
   --el-button-border-color: var(--line-strong);
   --el-button-text-color: var(--text-2);
   --el-button-hover-bg-color: var(--accent-soft);
@@ -707,7 +710,7 @@ input:-internal-autofill-selected {
 
 /* 表单校验红色 */
 .el-form-item__error {
-  color: #f87171;
+  color: var(--el-color-danger);
   font-size: 12px;
 }
 .el-form-item__label {
