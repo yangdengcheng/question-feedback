@@ -2,7 +2,7 @@
   <div class="panel panel-hover p-5 cursor-pointer" @click="goDetail">
     <div class="flex items-start justify-between mb-3">
       <div class="flex items-center gap-3">
-        <span class="text-xs text-slate-500 font-mono tnum">{{
+        <span class="text-xs text-ink-text-3 font-mono tnum">{{
           ticket.ticketNo
         }}</span>
         <el-tag size="small" effect="plain" :type="typeTagType">{{
@@ -12,11 +12,11 @@
       <StatusBadge :status="ticket.status" />
     </div>
 
-    <h3 class="text-base font-medium text-slate-200 mb-2 line-clamp-1">
+    <h3 class="text-base font-medium text-ink-text mb-2 line-clamp-1">
       {{ ticket.title }}
     </h3>
 
-    <div class="flex items-center justify-between text-xs text-slate-500">
+    <div class="flex items-center justify-between text-xs text-ink-text-3">
       <div class="flex items-center gap-4">
         <span>
           <el-icon class="mr-1"><Flag /></el-icon>

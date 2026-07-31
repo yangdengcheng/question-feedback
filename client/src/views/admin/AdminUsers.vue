@@ -1,7 +1,7 @@
 <template>
   <div>
     <div class="flex items-center justify-between mb-6">
-      <h1 class="text-xl font-bold text-slate-200">用户管理</h1>
+      <h1 class="text-xl font-bold text-ink-text">用户管理</h1>
       <button class="btn-accent px-4 py-2 text-sm" @click="showCreateDialog = true">
         <el-icon class="mr-1"><Plus /></el-icon>新建用户
       </button>
@@ -34,8 +34,8 @@
               <span class="text-xs text-green-400">在线</span>
             </span>
             <span v-else class="inline-flex items-center gap-1">
-              <span class="w-2 h-2 rounded-full bg-slate-600 inline-block"></span>
-              <span class="text-xs text-slate-500">离线</span>
+              <span class="w-2 h-2 rounded-full bg-ink-text-3 inline-block"></span>
+              <span class="text-xs text-ink-text-3">离线</span>
             </span>
           </template>
         </el-table-column>
@@ -99,7 +99,7 @@
 
     <!-- 变更角色对话框 -->
     <el-dialog v-model="showRoleDialog" title="变更角色" width="400px">
-      <p class="text-sm text-slate-400 mb-4">用户：{{ roleDialogUser?.realName }}</p>
+      <p class="text-sm text-ink-text-2 mb-4">用户：{{ roleDialogUser?.realName }}</p>
       <el-select v-model="newRole" placeholder="选择新角色" style="width: 100%">
         <el-option v-for="r in roleOptions" :key="r.value" :label="r.label" :value="r.value" />
       </el-select>

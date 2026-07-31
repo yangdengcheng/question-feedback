@@ -1,6 +1,6 @@
 <template>
   <div>
-    <h1 class="text-xl font-bold text-slate-200 mb-6">工单管理</h1>
+    <h1 class="text-xl font-bold text-ink-text mb-6">工单管理</h1>
 
     <div class="panel p-4 mb-6 flex items-center gap-4 flex-wrap">
       <el-input

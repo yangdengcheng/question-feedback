@@ -7,8 +7,8 @@
         >
           <el-icon :size="32" color="#fff"><ChatDotRound /></el-icon>
         </div>
-        <h1 class="text-2xl font-bold text-slate-200">问题反馈中心</h1>
-        <p class="text-slate-500 mt-2 text-sm">登录您的账号</p>
+        <h1 class="text-2xl font-bold text-ink-text">问题反馈中心</h1>
+        <p class="text-ink-text-3 mt-2 text-sm">登录您的账号</p>
       </div>
 
       <div class="panel p-8">
@@ -51,11 +51,11 @@
           </el-form-item>
         </el-form>
 
-        <div class="text-center text-sm text-slate-500">
+        <div class="text-center text-sm text-ink-text-3">
           还没有账号？
           <router-link
             to="/register"
-            class="text-primary hover:text-[#fcd34d] transition-colors"
+            class="text-accent-text hover:text-[#fcd34d] transition-colors"
           >
             立即注册
           </router-link>
