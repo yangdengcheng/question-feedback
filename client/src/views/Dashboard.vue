@@ -15,7 +15,7 @@
         <div
           v-for="card in statCards"
           :key="card.key"
-          class="panel p-5 cursor-pointer hover:border-primary/40 transition-colors"
+          class="panel p-5 cursor-pointer hover:border-accent-border transition-colors"
           @click="goList"
         >
           <div class="flex items-center justify-between mb-3">
@@ -39,7 +39,7 @@
             v-for="t in stats.recent"
             :key="t.id"
             :to="`/tickets/${t.id}`"
-            class="flex items-center gap-4 py-3 px-2 rounded-lg hover:bg-primary/5 transition-colors"
+            class="flex items-center gap-4 py-3 px-2 rounded-lg hover:bg-accent-soft transition-colors"
           >
             <span class="text-xs text-ink-text-3 font-mono tnum w-36 shrink-0">{{ t.ticketNo }}</span>
             <span class="flex-1 text-sm text-ink-text truncate">{{ t.title }}</span>

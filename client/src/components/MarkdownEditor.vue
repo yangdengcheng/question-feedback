@@ -2,9 +2,9 @@
   <div class="md-wrap">
     <MdEditor
       :model-value="modelValue"
-      :theme="'dark'"
-      :preview-theme="'dark'"
-      :code-theme="'atom'"
+      :theme="theme"
+      :preview-theme="theme"
+      :code-theme="theme === 'dark' ? 'atom' : 'github'"
       :style="{ height }"
       @update:model-value="(v) => emit('update:modelValue', v)"
       @on-upload-img="onUploadImg"
@@ -17,6 +17,9 @@ import { MdEditor } from "md-editor-v3";
 import "md-editor-v3/lib/style.css";
 import { ElMessage } from "element-plus";
 import request from "../api/request";
+import { useTheme } from "../composables/useTheme";
+
+const { theme } = useTheme();
 
 defineProps({
   modelValue: { type: String, default: "" },

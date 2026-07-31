@@ -42,7 +42,7 @@
         <div class="lg:col-span-2 panel p-6">
           <h2 class="panel-title mb-4">说明文档</h2>
           <div v-if="pkg.docMarkdown">
-            <MdPreview :model-value="pkg.docMarkdown" theme="dark" preview-theme="dark" code-theme="atom" />
+            <MdPreview :model-value="pkg.docMarkdown" :theme="theme" :preview-theme="theme" :code-theme="theme === 'dark' ? 'atom' : 'github'" />
           </div>
           <div v-else class="text-ink-text-3 text-sm py-8 text-center">暂无说明文档</div>
         </div>
@@ -180,9 +180,11 @@ import {
 } from "../api/toolkit";
 import request from "../api/request";
 import MarkdownEditor from "../components/MarkdownEditor.vue";
+import { useTheme } from "../composables/useTheme";
 
 const route = useRoute();
 const authStore = useAuthStore();
+const { theme } = useTheme();
 
 const pkg = ref(null);
 const versions = ref([]);
