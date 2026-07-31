@@ -15,7 +15,7 @@
         <span v-for="file in fileList" :key="file.uid" class="fu-chip">
           <img v-if="file.previewUrl" :src="file.previewUrl" class="fu-chip__thumb"
             @click="openPreview(fileList.indexOf(file))" />
-          <el-icon v-else :size="13" class="text-slate-400 shrink-0"><Document /></el-icon>
+          <el-icon v-else :size="13" class="text-ink-text-2 shrink-0"><Document /></el-icon>
           <span class="fu-chip__name">{{ file.name }}</span>
           <button type="button" class="fu-chip__x" @click="removeFile(file.uid)" aria-label="移除附件">
             <el-icon :size="12"><Close /></el-icon>
@@ -28,14 +28,14 @@
     <template v-else>
       <el-upload drag :auto-upload="false" :show-file-list="false" :accept="acceptTypes" multiple
         :on-change="handleFileSelect">
-        <el-icon class="el-icon--upload text-primary" :size="40">
+        <el-icon class="el-icon--upload text-accent-text" :size="40">
           <UploadFilled />
         </el-icon>
-        <div class="el-upload__text text-slate-400">
-          拖拽文件到此处，或 <em class="text-primary">点击选择</em>，或 <em class="text-st-processing">Ctrl+V 粘贴截图</em>
+        <div class="el-upload__text text-ink-text-2">
+          拖拽文件到此处，或 <em class="text-accent-text">点击选择</em>，或 <em class="text-st-processing">Ctrl+V 粘贴截图</em>
         </div>
         <template #tip>
-          <div class="el-upload__tip text-slate-500">
+          <div class="el-upload__tip text-ink-text-3">
             支持 jpg/png/gif/mp4/pdf/doc/docx/xls/xlsx/zip/rar，单文件不超过 10MB。文件将在提交时上传。
           </div>
         </template>
@@ -49,9 +49,9 @@
               class="w-10 h-10 rounded object-cover shrink-0 cursor-pointer hover:opacity-80 transition-opacity"
               @click="openPreview(fileList.indexOf(file))"
             />
-            <el-icon v-else :size="20" class="text-slate-400 shrink-0"><Document /></el-icon>
-            <span class="text-sm text-slate-300 truncate">{{ file.name }}</span>
-            <span class="text-xs text-slate-500">{{ formatSize(file.size) }}</span>
+            <el-icon v-else :size="20" class="text-ink-text-2 shrink-0"><Document /></el-icon>
+            <span class="text-sm text-ink-text truncate">{{ file.name }}</span>
+            <span class="text-xs text-ink-text-3">{{ formatSize(file.size) }}</span>
             <el-tag v-if="file.uploaded" type="success" size="small" effect="plain">已上传</el-tag>
             <el-tag v-else type="info" size="small" effect="plain">待上传</el-tag>
           </div>

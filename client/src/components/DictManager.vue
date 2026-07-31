@@ -9,7 +9,7 @@
     </div>
 
     <!-- 列表 -->
-    <div v-if="rows.length === 0" class="text-center text-slate-500 py-8 text-sm">暂无数据</div>
+    <div v-if="rows.length === 0" class="text-center text-ink-text-3 py-8 text-sm">暂无数据</div>
     <div v-else class="space-y-2">
       <div
         v-for="item in rows"
@@ -26,9 +26,9 @@
           </div>
         </template>
         <template v-else>
-          <span class="text-sm text-slate-200 w-32 truncate">{{ item.name }}</span>
+          <span class="text-sm text-ink-text w-32 truncate">{{ item.name }}</span>
           <span class="badge tnum">{{ item.code }}</span>
-          <span class="text-xs text-slate-500 tnum">排序 {{ item.sort }}</span>
+          <span class="text-xs text-ink-text-3 tnum">排序 {{ item.sort }}</span>
           <div class="ml-auto flex items-center gap-3">
             <el-switch
               :model-value="item.isActive"

@@ -2,18 +2,18 @@
   <div>
     <!-- 加载 -->
     <div v-if="loading" class="flex justify-center py-20">
-      <el-icon class="is-loading text-primary" :size="32"><Loading /></el-icon>
+      <el-icon class="is-loading text-accent-text" :size="32"><Loading /></el-icon>
     </div>
 
     <template v-else-if="pkg">
       <!-- 头部 -->
       <div class="flex items-start justify-between gap-4 mb-6 flex-wrap">
         <div class="min-w-0">
-          <router-link to="/toolkit" class="text-sm text-slate-500 hover:text-primary inline-flex items-center gap-1 mb-2">
+          <router-link to="/toolkit" class="text-sm text-ink-text-3 hover:text-accent-text inline-flex items-center gap-1 mb-2">
             <el-icon><ArrowLeft /></el-icon>返回工具包
           </router-link>
           <div class="flex items-center gap-3 flex-wrap">
-            <h1 class="text-2xl font-bold text-slate-100">{{ pkg.name }}</h1>
+            <h1 class="text-2xl font-bold text-ink-text">{{ pkg.name }}</h1>
             <span v-if="!pkg.isActive" class="badge">已下架</span>
           </div>
           <div class="flex items-center gap-2 mt-2 flex-wrap">
@@ -44,7 +44,7 @@
           <div v-if="pkg.docMarkdown">
             <MdPreview :model-value="pkg.docMarkdown" theme="dark" preview-theme="dark" code-theme="atom" />
           </div>
-          <div v-else class="text-slate-500 text-sm py-8 text-center">暂无说明文档</div>
+          <div v-else class="text-ink-text-3 text-sm py-8 text-center">暂无说明文档</div>
         </div>
 
         <!-- 信息卡 -->
@@ -53,24 +53,24 @@
             <h2 class="panel-title mb-4">信息</h2>
             <dl class="space-y-3 text-sm">
               <div class="flex justify-between">
-                <dt class="text-slate-500">省份</dt>
-                <dd class="text-slate-200">{{ pkg.province?.name || "-" }}</dd>
+                <dt class="text-ink-text-3">省份</dt>
+                <dd class="text-ink-text">{{ pkg.province?.name || "-" }}</dd>
               </div>
               <div class="flex justify-between">
-                <dt class="text-slate-500">分类</dt>
-                <dd class="text-slate-200">{{ pkg.category?.name || "-" }}</dd>
+                <dt class="text-ink-text-3">分类</dt>
+                <dd class="text-ink-text">{{ pkg.category?.name || "-" }}</dd>
               </div>
               <div class="flex justify-between">
-                <dt class="text-slate-500">最新版本</dt>
-                <dd class="text-slate-200 tnum">{{ pkg.currentVersion ? `v${pkg.currentVersion.version}` : "尚未发布" }}</dd>
+                <dt class="text-ink-text-3">最新版本</dt>
+                <dd class="text-ink-text tnum">{{ pkg.currentVersion ? `v${pkg.currentVersion.version}` : "尚未发布" }}</dd>
               </div>
               <div class="flex justify-between">
-                <dt class="text-slate-500">创建人</dt>
-                <dd class="text-slate-200">{{ pkg.creator?.realName || "-" }}</dd>
+                <dt class="text-ink-text-3">创建人</dt>
+                <dd class="text-ink-text">{{ pkg.creator?.realName || "-" }}</dd>
               </div>
               <div class="flex justify-between">
-                <dt class="text-slate-500">更新时间</dt>
-                <dd class="text-slate-200 tnum">{{ formatTime(pkg.updatedAt) }}</dd>
+                <dt class="text-ink-text-3">更新时间</dt>
+                <dd class="text-ink-text tnum">{{ formatTime(pkg.updatedAt) }}</dd>
               </div>
             </dl>
             <button
@@ -86,17 +86,17 @@
           <!-- 版本历史 -->
           <div class="panel p-6">
             <h2 class="panel-title mb-4">版本历史</h2>
-            <div v-if="versions.length === 0" class="text-slate-500 text-sm py-4 text-center">暂无版本</div>
+            <div v-if="versions.length === 0" class="text-ink-text-3 text-sm py-4 text-center">暂无版本</div>
             <div v-else class="space-y-4">
               <div v-for="ver in versions" :key="ver.id" class="border-l-2 border-line pl-3">
                 <div class="flex items-center justify-between gap-2">
-                  <span class="text-sm font-semibold text-slate-200 tnum">v{{ ver.version }}</span>
-                  <button class="text-xs text-primary hover:underline inline-flex items-center gap-1" @click="downloadVer(ver)">
+                  <span class="text-sm font-semibold text-ink-text tnum">v{{ ver.version }}</span>
+                  <button class="text-xs text-accent-text hover:underline inline-flex items-center gap-1" @click="downloadVer(ver)">
                     <el-icon :size="12"><Download /></el-icon>下载
                   </button>
                 </div>
-                <p v-if="ver.releaseNote" class="text-xs text-slate-400 mt-1 whitespace-pre-wrap">{{ ver.releaseNote }}</p>
-                <p class="text-xs text-slate-500 tnum mt-1">{{ formatTime(ver.createdAt) }} · {{ ver.creator?.realName || "" }}</p>
+                <p v-if="ver.releaseNote" class="text-xs text-ink-text-2 mt-1 whitespace-pre-wrap">{{ ver.releaseNote }}</p>
+                <p class="text-xs text-ink-text-3 tnum mt-1">{{ formatTime(ver.createdAt) }} · {{ ver.creator?.realName || "" }}</p>
               </div>
             </div>
           </div>

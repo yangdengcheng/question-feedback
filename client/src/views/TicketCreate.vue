@@ -3,11 +3,11 @@
     <div class="mb-6">
       <router-link
         to="/"
-        class="text-sm text-slate-500 hover:text-slate-300 transition-colors"
+        class="text-sm text-ink-text-3 hover:text-ink-text-2 transition-colors"
       >
         ← 返回工单列表
       </router-link>
-      <h1 class="text-xl font-bold text-slate-200 mt-2">新建工单</h1>
+      <h1 class="text-xl font-bold text-ink-text mt-2">新建工单</h1>
     </div>
 
     <div class="panel p-8">

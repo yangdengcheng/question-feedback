@@ -2,7 +2,7 @@
   <div>
     <!-- 标题 + 维护者操作 -->
     <div class="flex items-center justify-between mb-6">
-      <h1 class="text-xl font-bold text-slate-200">工具包</h1>
+      <h1 class="text-xl font-bold text-ink-text">工具包</h1>
       <div v-if="authStore.isMaintainer" class="flex items-center gap-3">
         <button class="btn-ghost" @click="openDictDialog">
           <el-icon class="mr-1"><Setting /></el-icon>管理省份/分类
@@ -28,14 +28,14 @@
 
     <!-- 加载 -->
     <div v-if="loading" class="flex justify-center py-20">
-      <el-icon class="is-loading text-primary" :size="32"><Loading /></el-icon>
+      <el-icon class="is-loading text-accent-text" :size="32"><Loading /></el-icon>
     </div>
 
     <!-- 空态 -->
     <div v-else-if="packages.length === 0" class="text-center py-20">
-      <el-icon :size="48" class="text-slate-600 mb-4"><Tools /></el-icon>
-      <p class="text-slate-500 mb-2">暂无工具包</p>
-      <p class="text-slate-600 text-sm">
+      <el-icon :size="48" class="text-ink-text-3 mb-4"><Tools /></el-icon>
+      <p class="text-ink-text-3 mb-2">暂无工具包</p>
+      <p class="text-ink-text-3 text-sm">
         {{ authStore.isMaintainer ? "点击右上角「新建工具包」开始维护" : "敬请期待，维护者正在整理工具包" }}
       </p>
     </div>
@@ -49,15 +49,15 @@
         class="panel panel-hover p-5 flex flex-col gap-3 cursor-pointer"
       >
         <div class="flex items-start justify-between gap-2">
-          <h3 class="text-base font-semibold text-slate-100 leading-snug">{{ pkg.name }}</h3>
+          <h3 class="text-base font-semibold text-ink-text leading-snug">{{ pkg.name }}</h3>
           <span v-if="pkg.currentVersion" class="badge tnum shrink-0">v{{ pkg.currentVersion.version }}</span>
         </div>
         <div class="flex items-center gap-2 flex-wrap">
           <span class="badge">{{ pkg.province?.name }}</span>
           <span class="badge">{{ pkg.category?.name }}</span>
         </div>
-        <p class="text-sm text-slate-400 line-clamp-2 min-h-[40px]">{{ pkg.summary || "暂无简介" }}</p>
-        <div class="text-xs text-slate-500 tnum mt-auto pt-2 border-t border-line">
+        <p class="text-sm text-ink-text-2 line-clamp-2 min-h-[40px]">{{ pkg.summary || "暂无简介" }}</p>
+        <div class="text-xs text-ink-text-3 tnum mt-auto pt-2 border-t border-line">
           更新于 {{ formatTime(pkg.updatedAt) }}
         </div>
       </router-link>
