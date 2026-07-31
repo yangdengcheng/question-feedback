@@ -12,7 +12,7 @@
           >
             <el-icon :size="18" color="#fff"><ChatDotRound /></el-icon>
           </div>
-          <span class="text-lg font-semibold text-slate-200">问题反馈中心</span>
+          <span class="text-lg font-semibold text-ink-text">问题反馈中心</span>
         </div>
 
         <nav class="flex items-center gap-6">
@@ -21,8 +21,8 @@
             class="text-sm transition-colors duration-200"
             :class="
               $route.path === '/dashboard'
-                ? 'text-primary'
-                : 'text-slate-400 hover:text-slate-200'
+                ? 'text-accent-text'
+                : 'text-ink-text-2 hover:text-ink-text'
             "
           >
             看板
@@ -32,8 +32,8 @@
             class="text-sm transition-colors duration-200"
             :class="
               $route.path === '/'
-                ? 'text-primary'
-                : 'text-slate-400 hover:text-slate-200'
+                ? 'text-accent-text'
+                : 'text-ink-text-2 hover:text-ink-text'
             "
           >
             工单
@@ -43,8 +43,8 @@
             class="text-sm transition-colors duration-200"
             :class="
               $route.path.startsWith('/toolkit')
-                ? 'text-primary'
-                : 'text-slate-400 hover:text-slate-200'
+                ? 'text-accent-text'
+                : 'text-ink-text-2 hover:text-ink-text'
             "
           >
             工具包
@@ -54,8 +54,8 @@
             class="text-sm transition-colors duration-200 relative"
             :class="
               $route.path === '/notifications'
-                ? 'text-primary'
-                : 'text-slate-400 hover:text-slate-200'
+                ? 'text-accent-text'
+                : 'text-ink-text-2 hover:text-ink-text'
             "
           >
             通知
@@ -76,8 +76,8 @@
             class="text-sm transition-colors duration-200"
             :class="
               $route.path.startsWith('/admin')
-                ? 'text-primary'
-                : 'text-slate-400 hover:text-slate-200'
+                ? 'text-accent-text'
+                : 'text-ink-text-2 hover:text-ink-text'
             "
           >
             管理后台
@@ -87,7 +87,7 @@
         <ThemeToggle />
         <el-dropdown trigger="click" @command="handleCommand">
           <span
-            class="flex items-center gap-2 cursor-pointer text-slate-300 hover:text-slate-100 transition-colors"
+            class="flex items-center gap-2 cursor-pointer text-ink-text-2 hover:text-ink-text transition-colors"
           >
             <el-avatar :size="32" class="bg-primary text-[#1a1204] font-bold">
               {{ authStore.user?.realName?.charAt(0) || "U" }}

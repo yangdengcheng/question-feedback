@@ -1,13 +1,13 @@
 <template>
   <div class="max-w-4xl mx-auto">
     <div class="mb-6">
-      <router-link to="/" class="text-sm text-slate-500 hover:text-slate-300 transition-colors">
+      <router-link to="/" class="text-sm text-ink-text-3 hover:text-ink-text-2 transition-colors">
         ← 返回工单列表
       </router-link>
     </div>
 
     <div v-if="loading" class="flex justify-center py-20">
-      <el-icon class="is-loading text-primary" :size="32">
+      <el-icon class="is-loading text-accent-text" :size="32">
         <Loading />
       </el-icon>
     </div>
@@ -18,46 +18,46 @@
         <div class="flex items-start justify-between mb-4">
           <div>
             <div class="flex items-center gap-3 mb-2">
-              <span class="text-xs text-slate-500 tnum">{{ ticket.ticketNo }}</span>
+              <span class="text-xs text-ink-text-3 tnum">{{ ticket.ticketNo }}</span>
               <el-tag size="small" effect="plain" :type="typeTagType">{{ typeLabel }}</el-tag>
               <StatusBadge :status="ticket.status" />
             </div>
-            <h1 class="text-lg font-bold text-slate-200">{{ ticket.title }}</h1>
+            <h1 class="text-lg font-bold text-ink-text">{{ ticket.title }}</h1>
           </div>
         </div>
 
         <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
           <div>
-            <span class="text-slate-500">优先级</span>
-            <p class="text-slate-300 mt-1">{{ priorityLabel }}</p>
+            <span class="text-ink-text-3">优先级</span>
+            <p class="text-ink-text mt-1">{{ priorityLabel }}</p>
           </div>
           <div>
-            <span class="text-slate-500">提交人</span>
-            <p class="text-slate-300 mt-1">{{ ticket.creator?.realName }}</p>
+            <span class="text-ink-text-3">提交人</span>
+            <p class="text-ink-text mt-1">{{ ticket.creator?.realName }}</p>
           </div>
           <div>
-            <span class="text-slate-500">处理人</span>
-            <p class="text-slate-300 mt-1">{{ ticket.assignee?.realName || "未分配" }}</p>
+            <span class="text-ink-text-3">处理人</span>
+            <p class="text-ink-text mt-1">{{ ticket.assignee?.realName || "未分配" }}</p>
           </div>
           <div>
-            <span class="text-slate-500">创建时间</span>
-            <p class="text-slate-300 mt-1 tnum">{{ formatTime(ticket.createdAt) }}</p>
+            <span class="text-ink-text-3">创建时间</span>
+            <p class="text-ink-text mt-1 tnum">{{ formatTime(ticket.createdAt) }}</p>
           </div>
         </div>
 
         <div v-if="ticket.description" class="mt-4 pt-4 border-t border-line">
-          <p class="text-sm text-slate-400 whitespace-pre-wrap">{{ ticket.description }}</p>
+          <p class="text-sm text-ink-text-2 whitespace-pre-wrap">{{ ticket.description }}</p>
         </div>
 
         <div v-if="ticket.attachments && ticket.attachments.length > 0" class="mt-4 pt-4 border-t border-line">
-          <span class="text-sm text-slate-500 mb-2 block">附件</span>
+          <span class="text-sm text-ink-text-3 mb-2 block">附件</span>
           <div class="flex flex-wrap gap-3">
             <template v-for="att in ticket.attachments" :key="att.id">
               <img v-if="att.fileType.startsWith('image/')" :src="`/api/attachments/${att.id}`"
                 class="w-20 h-20 rounded-lg object-cover cursor-pointer hover:opacity-80 transition-opacity"
                 @click="openAttachmentPreview(ticket.attachments.filter(a => a.fileType.startsWith('image/')).indexOf(att))" />
               <a v-else :href="`/api/attachments/${att.id}`" target="_blank"
-                class="flex items-center gap-2 text-xs text-primary hover:text-[#fcd34d] panel px-3 py-2 rounded-lg transition-colors">
+                class="flex items-center gap-2 text-xs text-accent-text hover:text-[#fcd34d] panel px-3 py-2 rounded-lg transition-colors">
                 <el-icon>
                   <Document />
                 </el-icon>
@@ -123,15 +123,15 @@
 
       <!-- 工单流转记录 -->
       <div v-if="ticket.logs && ticket.logs.length > 0" class="panel p-6 mb-6">
-        <h2 class="panel-title text-base font-semibold text-slate-200 mb-4">流转记录</h2>
+        <h2 class="panel-title text-base font-semibold text-ink-text mb-4">流转记录</h2>
         <el-timeline>
           <el-timeline-item v-for="log in ticket.logs" :key="log.id" :timestamp="formatTime(log.createdAt)"
             placement="top" :type="logActionColor(log.action)">
-            <div class="text-sm text-slate-300">
-              <span class="text-primary font-medium">{{ log.operator?.realName }}</span>
+            <div class="text-sm text-ink-text">
+              <span class="text-accent-text font-medium">{{ log.operator?.realName }}</span>
               {{ logActionText(log) }}
             </div>
-            <div v-if="log.content" class="text-xs text-slate-500 mt-1 pl-1 border-l-2 border-primary/30 ml-0.5">
+            <div v-if="log.content" class="text-xs text-ink-text-3 mt-1 pl-1 border-l-2 border-accent-border ml-0.5">
               {{ log.content }}
             </div>
             <div v-if="log.attachments && log.attachments.length > 0" class="mt-2 flex flex-wrap gap-2">
@@ -140,7 +140,7 @@
                   class="w-16 h-16 rounded-lg object-cover cursor-pointer hover:opacity-80 transition-opacity"
                   @click="openLogPreview(log, att)" />
                 <a v-else :href="`/api/attachments/${att.id}`" target="_blank"
-                  class="flex items-center gap-1 text-xs text-primary hover:text-[#fcd34d] panel px-2 py-1 rounded-lg transition-colors">
+                  class="flex items-center gap-1 text-xs text-accent-text hover:text-[#fcd34d] panel px-2 py-1 rounded-lg transition-colors">
                   <el-icon>
                     <Document />
                   </el-icon>{{ att.fileName }}
@@ -153,10 +153,10 @@
 
       <!-- 讨论区 -->
       <div class="panel p-6">
-        <h2 class="panel-title text-base font-semibold text-slate-200 mb-6">
+        <h2 class="panel-title text-base font-semibold text-ink-text mb-6">
           讨论记录
           <span v-if="newCommentTip"
-            class="ml-2 align-middle inline-flex items-center gap-1 text-xs font-medium text-primary">
+            class="ml-2 align-middle inline-flex items-center gap-1 text-xs font-medium text-accent-text">
             <i class="w-1.5 h-1.5 rounded-full bg-primary pulse-dot" />有新评论
           </span>
         </h2>
@@ -164,10 +164,10 @@
         <div v-if="comments.length === 0" class="flex flex-col items-center justify-center py-12 text-center">
           <div
             class="w-14 h-14 rounded-full border border-dashed border-line-strong flex items-center justify-center bg-ink/40">
-            <el-icon :size="26" class="text-slate-600"><ChatDotRound /></el-icon>
+            <el-icon :size="26" class="text-ink-text-3"><ChatDotRound /></el-icon>
           </div>
-          <p class="text-sm text-slate-400 mt-4">暂无讨论</p>
-          <p class="text-xs text-slate-600 mt-1">在下方发表第一条评论，开启对话</p>
+          <p class="text-sm text-ink-text-2 mt-4">暂无讨论</p>
+          <p class="text-xs text-ink-text-3 mt-1">在下方发表第一条评论，开启对话</p>
         </div>
 
         <div v-else class="space-y-6">
@@ -180,7 +180,7 @@
           <div class="flex items-start justify-between gap-3 mt-3">
             <div class="flex items-center gap-3 min-w-0">
               <FileUpload compact ref="commentFileUploadRef" />
-              <span class="text-xs text-slate-600 hidden sm:inline">可拖拽 / 粘贴图片</span>
+              <span class="text-xs text-ink-text-3 hidden sm:inline">可拖拽 / 粘贴图片</span>
             </div>
             <button class="btn-accent shrink-0" :disabled="!newComment.trim() || submitting" @click="submitComment">
               <el-icon v-if="!submitting"><Promotion /></el-icon>

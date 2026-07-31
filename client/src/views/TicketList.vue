@@ -1,7 +1,7 @@
 <template>
   <div>
     <div class="flex items-center justify-between mb-6">
-      <h1 class="text-xl font-bold text-slate-200">我的工单</h1>
+      <h1 class="text-xl font-bold text-ink-text">我的工单</h1>
       <router-link to="/tickets/new">
         <button class="btn-accent">
           <el-icon class="mr-1"><Plus /></el-icon>新建工单
@@ -49,15 +49,15 @@
     </div>
 
     <div v-if="loading" class="flex justify-center py-20">
-      <el-icon class="is-loading text-primary" :size="32"
+      <el-icon class="is-loading text-accent-text" :size="32"
         ><Loading
       /></el-icon>
     </div>
 
     <div v-else-if="tickets.length === 0" class="text-center py-20">
-      <el-icon :size="48" class="text-slate-600 mb-4"><FolderOpened /></el-icon>
-      <p class="text-slate-500 mb-2">暂无工单</p>
-      <p class="text-slate-600 text-sm mb-6">
+      <el-icon :size="48" class="text-ink-text-3 mb-4"><FolderOpened /></el-icon>
+      <p class="text-ink-text-3 mb-2">暂无工单</p>
+      <p class="text-ink-text-3 text-sm mb-6">
         遇到问题？提交一个工单让我们帮您解决
       </p>
       <router-link to="/tickets/new">

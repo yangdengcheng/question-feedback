@@ -1,12 +1,12 @@
 <template>
   <div>
     <div class="mb-6">
-      <h1 class="text-xl font-bold text-slate-200">工单看板</h1>
-      <p class="text-sm text-slate-500 mt-1">{{ authStore.isInternal ? "分配给我的工单概览" : "我创建的工单概览" }}</p>
+      <h1 class="text-xl font-bold text-ink-text">工单看板</h1>
+      <p class="text-sm text-ink-text-3 mt-1">{{ authStore.isInternal ? "分配给我的工单概览" : "我创建的工单概览" }}</p>
     </div>
 
     <div v-if="loading" class="flex justify-center py-20">
-      <el-icon class="is-loading text-primary" :size="32"><Loading /></el-icon>
+      <el-icon class="is-loading text-accent-text" :size="32"><Loading /></el-icon>
     </div>
 
     <template v-else>
@@ -19,7 +19,7 @@
           @click="goList"
         >
           <div class="flex items-center justify-between mb-3">
-            <span class="text-sm text-slate-400">{{ card.label }}</span>
+            <span class="text-sm text-ink-text-2">{{ card.label }}</span>
             <span class="w-2.5 h-2.5 rounded-full" :class="card.dot"></span>
           </div>
           <p class="text-3xl font-bold tnum" :class="card.color">
@@ -30,9 +30,9 @@
 
       <!-- 最近工单 -->
       <div class="panel p-6">
-        <h2 class="text-base font-semibold text-slate-200 mb-4">最近工单</h2>
+        <h2 class="text-base font-semibold text-ink-text mb-4">最近工单</h2>
         <div v-if="stats.recent.length === 0" class="text-center py-10">
-          <p class="text-slate-500 text-sm">{{ authStore.isInternal ? "暂无分配给您的工单" : "暂无工单，去创建一个吧" }}</p>
+          <p class="text-ink-text-3 text-sm">{{ authStore.isInternal ? "暂无分配给您的工单" : "暂无工单，去创建一个吧" }}</p>
         </div>
         <div v-else class="divide-y divide-line">
           <router-link
@@ -41,11 +41,11 @@
             :to="`/tickets/${t.id}`"
             class="flex items-center gap-4 py-3 px-2 rounded-lg hover:bg-primary/5 transition-colors"
           >
-            <span class="text-xs text-slate-500 font-mono tnum w-36 shrink-0">{{ t.ticketNo }}</span>
-            <span class="flex-1 text-sm text-slate-300 truncate">{{ t.title }}</span>
+            <span class="text-xs text-ink-text-3 font-mono tnum w-36 shrink-0">{{ t.ticketNo }}</span>
+            <span class="flex-1 text-sm text-ink-text truncate">{{ t.title }}</span>
             <el-tag size="small" :type="typeTagType(t.type)">{{ typeLabel(t.type) }}</el-tag>
             <StatusBadge :status="t.status" />
-            <span class="text-xs text-slate-500 tnum w-24 text-right shrink-0">{{ formatTime(t.updatedAt) }}</span>
+            <span class="text-xs text-ink-text-3 tnum w-24 text-right shrink-0">{{ formatTime(t.updatedAt) }}</span>
           </router-link>
         </div>
       </div>
@@ -74,7 +74,7 @@ const statCards = [
   { key: "pending", label: "待处理", color: "text-amber-400", dot: "bg-amber-400" },
   { key: "processing", label: "处理中", color: "text-st-processing", dot: "bg-st-processing" },
   { key: "resolved", label: "已解决", color: "text-green-400", dot: "bg-green-400" },
-  { key: "closed", label: "已关闭", color: "text-slate-400", dot: "bg-slate-500" },
+  { key: "closed", label: "已关闭", color: "text-ink-text-2", dot: "bg-ink-text-3" },
 ];
 
 onMounted(() => {

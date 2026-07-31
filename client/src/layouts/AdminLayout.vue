@@ -12,27 +12,27 @@
           >
             <el-icon :size="18" color="#fff"><ChatDotRound /></el-icon>
           </div>
-          <span class="text-lg font-semibold text-slate-200">问题反馈中心</span>
+          <span class="text-lg font-semibold text-ink-text">问题反馈中心</span>
           <el-tag size="small" type="warning" class="ml-2">管理后台</el-tag>
         </div>
 
         <div class="flex items-center gap-4">
           <router-link
             to="/toolkit"
-            class="text-sm text-slate-400 hover:text-slate-200 transition-colors"
+            class="text-sm text-ink-text-2 hover:text-ink-text transition-colors"
           >
             工具包
           </router-link>
           <router-link
             to="/"
-            class="text-sm text-slate-400 hover:text-slate-200 transition-colors"
+            class="text-sm text-ink-text-2 hover:text-ink-text transition-colors"
           >
             返回前台
           </router-link>
           <ThemeToggle />
           <el-dropdown trigger="click" @command="handleCommand">
             <span
-              class="flex items-center gap-2 cursor-pointer text-slate-300 hover:text-slate-100 transition-colors"
+              class="flex items-center gap-2 cursor-pointer text-ink-text-2 hover:text-ink-text transition-colors"
             >
               <el-avatar :size="32" class="bg-primary text-[#1a1204] font-bold">
                 {{ authStore.user?.realName?.charAt(0) || "A" }}
@@ -60,8 +60,8 @@
           :default-active="activeMenu"
           router
           background-color="transparent"
-          text-color="#94a3b8"
-          active-text-color="#fbbf24"
+          text-color="var(--text-2)"
+          active-text-color="var(--accent-text)"
           class="border-none"
         >
           <el-menu-item index="/admin/tickets">
