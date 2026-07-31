@@ -84,25 +84,27 @@
           </router-link>
         </nav>
 
-        <ThemeToggle />
-        <el-dropdown trigger="click" @command="handleCommand">
-          <span
-            class="flex items-center gap-2 cursor-pointer text-ink-text-2 hover:text-ink-text transition-colors"
-          >
-            <el-avatar :size="32" class="bg-primary text-[#1a1204] font-bold">
-              {{ authStore.user?.realName?.charAt(0) || "U" }}
-            </el-avatar>
-            <span class="text-sm"><span class="w-2 h-2 rounded-full bg-green-400 inline-block mr-1"></span>{{ authStore.user?.realName }}</span>
-            <el-icon><ArrowDown /></el-icon>
-          </span>
-          <template #dropdown>
-            <el-dropdown-menu>
-              <el-dropdown-item command="logout">
-                <el-icon><SwitchButton /></el-icon>退出登录
-              </el-dropdown-item>
-            </el-dropdown-menu>
-          </template>
-        </el-dropdown>
+        <div class="flex items-center gap-3">
+          <ThemeToggle />
+          <el-dropdown trigger="click" @command="handleCommand">
+            <span
+              class="flex items-center gap-2 cursor-pointer text-ink-text-2 hover:text-ink-text transition-colors"
+            >
+              <el-avatar :size="32" class="bg-primary text-[#1a1204] font-bold">
+                {{ authStore.user?.realName?.charAt(0) || "U" }}
+              </el-avatar>
+              <span class="text-sm"><span class="w-2 h-2 rounded-full bg-green-400 inline-block mr-1"></span>{{ authStore.user?.realName }}</span>
+              <el-icon><ArrowDown /></el-icon>
+            </span>
+            <template #dropdown>
+              <el-dropdown-menu>
+                <el-dropdown-item command="logout">
+                  <el-icon><SwitchButton /></el-icon>退出登录
+                </el-dropdown-item>
+              </el-dropdown-menu>
+            </template>
+          </el-dropdown>
+        </div>
       </div>
     </header>
 
