@@ -29,6 +29,7 @@
           >
             返回前台
           </router-link>
+          <ThemeToggle />
           <el-dropdown trigger="click" @command="handleCommand">
             <span
               class="flex items-center gap-2 cursor-pointer text-slate-300 hover:text-slate-100 transition-colors"
@@ -85,6 +86,7 @@
 import { computed } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useAuthStore } from "../stores/auth";
+import ThemeToggle from "../components/ThemeToggle.vue";
 
 const route = useRoute();
 const router = useRouter();

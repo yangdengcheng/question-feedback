@@ -84,6 +84,7 @@
           </router-link>
         </nav>
 
+        <ThemeToggle />
         <el-dropdown trigger="click" @command="handleCommand">
           <span
             class="flex items-center gap-2 cursor-pointer text-slate-300 hover:text-slate-100 transition-colors"
@@ -116,6 +117,7 @@ import { onMounted, onUnmounted } from "vue";
 import { useRouter } from "vue-router";
 import { useAuthStore } from "../stores/auth";
 import { useNotificationStore } from "../stores/notification";
+import ThemeToggle from "../components/ThemeToggle.vue";
 
 const router = useRouter();
 const authStore = useAuthStore();
