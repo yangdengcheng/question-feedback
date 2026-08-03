@@ -42,7 +42,7 @@ export const useNotificationStore = defineStore("notification", () => {
       body: notification.content,
       icon: "/favicon.ico",
       tag: `ticket-${notification.ticketId}`,
-      requireInteraction: false,
+      requireInteraction: true,
     });
     n.onclick = () => {
       window.focus();
@@ -53,8 +53,6 @@ export const useNotificationStore = defineStore("notification", () => {
       }
       n.close();
     };
-    // Auto close after 8 seconds
-    setTimeout(() => n.close(), 8000);
   }
 
   function requestPermission() {
