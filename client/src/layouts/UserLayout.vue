@@ -126,13 +126,10 @@ const authStore = useAuthStore();
 const notificationStore = useNotificationStore();
 
 onMounted(() => {
-  notificationStore.startPolling();
-  notificationStore.requestPermission();
   window.addEventListener("beforeunload", sendOfflineBeacon);
 });
 
 onUnmounted(() => {
-  notificationStore.stopPolling();
   window.removeEventListener("beforeunload", sendOfflineBeacon);
 });
 
@@ -154,7 +151,6 @@ function sendOfflineBeacon() {
 function handleCommand(command) {
   if (command === "logout") {
     authStore.logout();
-    notificationStore.stopPolling();
     router.push("/login");
   }
 }
