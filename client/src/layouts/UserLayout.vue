@@ -49,6 +49,15 @@
           >
             工具包
           </router-link>
+          <a
+            v-if="authStore.isMaintainer"
+            href="http://58.221.192.245:13888/"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="text-sm text-ink-text-2 hover:text-ink-text transition-colors"
+          >
+            服务监控
+          </a>
           <router-link
             to="/notifications"
             class="text-sm transition-colors duration-200 relative"
@@ -71,7 +80,7 @@
             </span>
           </router-link>
           <router-link
-            v-if="authStore.isAdmin"
+            v-if="authStore.canAccessAdmin"
             to="/admin/tickets"
             class="text-sm transition-colors duration-200"
             :class="

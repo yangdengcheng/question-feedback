@@ -7,6 +7,8 @@ export const useAuthStore = defineStore("auth", () => {
   const token = ref(localStorage.getItem("token") || "");
   const isLoggedIn = computed(() => !!token.value);
   const isAdmin = computed(() => user.value?.role === "admin");
+  // 管理后台访问权限：系统管理员 + 开发主管
+  const canAccessAdmin = computed(() => ["admin", "dev_lead"].includes(user.value?.role));
   const INTERNAL_ROLES = ["data_maintenance", "dev_lead", "developer", "tester", "admin"];
   const isInternal = computed(() => INTERNAL_ROLES.includes(user.value?.role));
   const MAINTAINER_ROLES = ["developer", "dev_lead", "admin"];
@@ -47,5 +49,5 @@ export const useAuthStore = defineStore("auth", () => {
     }
   }
 
-  return { user, token, isLoggedIn, isAdmin, isInternal, isMaintainer, login, register, logout, fetchMe };
+  return { user, token, isLoggedIn, isAdmin, canAccessAdmin, isInternal, isMaintainer, login, register, logout, fetchMe };
 });

@@ -35,7 +35,7 @@ router.beforeEach((to, from, next) => {
   const token = localStorage.getItem("token");
   const user = JSON.parse(localStorage.getItem("user") || "null");
   if (to.meta.requiresAuth && !token) { next("/login"); return; }
-  if (to.meta.requiresAdmin && user?.role !== "admin") { next("/"); return; }
+  if (to.meta.requiresAdmin && !["admin", "dev_lead"].includes(user?.role)) { next("/"); return; }
   if ((to.path === "/login" || to.path === "/register") && token) { next("/"); return; }
   next();
 });

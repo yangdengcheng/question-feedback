@@ -17,15 +17,6 @@
         </div>
 
         <div class="flex items-center gap-4">
-          <a
-            v-if="authStore.isMaintainer"
-            href="http://58.221.192.245:13888/"
-            target="_blank"
-            rel="noopener noreferrer"
-            class="text-sm text-ink-text-2 hover:text-ink-text transition-colors"
-          >
-            服务监控
-          </a>
           <router-link
             to="/toolkit"
             class="text-sm text-ink-text-2 hover:text-ink-text transition-colors"
