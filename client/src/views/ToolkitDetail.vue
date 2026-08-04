@@ -91,7 +91,7 @@
               <div v-for="ver in versions" :key="ver.id" class="border-l-2 border-line pl-3">
                 <div class="flex items-center justify-between gap-2">
                   <span class="text-sm font-semibold text-ink-text tnum">v{{ ver.version }}</span>
-                  <div class="flex items-center gap-3">
+                  <div class="flex items-center gap-3 shrink-0">
                     <button class="text-xs text-accent-text hover:underline inline-flex items-center gap-1" @click="downloadVer(ver)">
                       <el-icon :size="12"><Download /></el-icon>下载
                     </button>
@@ -104,6 +104,9 @@
                     </button>
                   </div>
                 </div>
+                <p v-if="ver.fileName" class="text-xs text-ink-text-3 mt-1 truncate font-mono" :title="ver.fileName">
+                  {{ ver.fileName }}
+                </p>
                 <p v-if="ver.releaseNote" class="text-xs text-ink-text-2 mt-1 whitespace-pre-wrap">{{ ver.releaseNote }}</p>
                 <p class="text-xs text-ink-text-3 tnum mt-1">{{ formatTime(ver.createdAt) }} · {{ ver.creator?.realName || "" }}</p>
               </div>
