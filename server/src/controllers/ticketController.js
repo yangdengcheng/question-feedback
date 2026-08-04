@@ -4,6 +4,17 @@ const { generateTicketNo } = require("../services/ticketService");
 const { notifyNewTicket, notifyStatusChange, notifyAssigned } = require("../services/notificationService");
 const { logAction } = require("../services/ticketLogService");
 
+const INTERNAL_ROLES = ["data_maintenance", "dev_lead", "developer", "tester", "admin"];
+
+// 用户可见的工单数据范围（列表与看板统计共用，保证口径一致）：
+// admin/dev_lead 看全部；其他内部角色看「我创建的 + 分配给我的」；客户看「我创建的」
+function visibleWhere(user) {
+  const isInternal = INTERNAL_ROLES.includes(user.role);
+  if (isInternal && (user.role === "admin" || user.role === "dev_lead")) return {};
+  if (isInternal) return { [Op.or]: [{ userId: user.id }, { assigneeId: user.id }] };
+  return { userId: user.id };
+}
+
 async function create(req, res, next) {
   try {
     const { title, description, type, priority, attachmentIds } = req.body;
@@ -39,17 +50,7 @@ async function list(req, res, next) {
   try {
     const { page = 1, pageSize = 20, status, type, priority } = req.query;
 
-    const INTERNAL_ROLES = ["data_maintenance", "dev_lead", "developer", "tester", "admin"];
-    const isInternal = INTERNAL_ROLES.includes(req.user.role);
-
-    let where = {};
-    if (isInternal && (req.user.role === "admin" || req.user.role === "dev_lead")) {
-      where = {};
-    } else if (isInternal) {
-      where = { [Op.or]: [{ userId: req.user.id }, { assigneeId: req.user.id }] };
-    } else {
-      where = { userId: req.user.id };
-    }
+    let where = visibleWhere(req.user);
 
     if (status) where.status = status;
     if (type) where.type = type;
@@ -202,8 +203,6 @@ async function transfer(req, res, next) {
   } catch (error) { next(error); }
 }
 
-const INTERNAL_ROLES = ["data_maintenance", "dev_lead", "developer", "tester", "admin"];
-
 // 可转交的内部用户列表（所有内部角色可访问）
 async function listAssignees(req, res, next) {
   try {
@@ -219,11 +218,10 @@ async function listAssignees(req, res, next) {
   } catch (error) { next(error); }
 }
 
-// 工单看板：内部角色统计「分配给我的」，客户统计「我创建的」
+// 工单看板：统计口径与工单列表一致（visibleWhere）
 async function stats(req, res, next) {
   try {
-    const isInternal = INTERNAL_ROLES.includes(req.user.role);
-    const where = isInternal ? { assigneeId: req.user.id } : { userId: req.user.id };
+    const where = visibleWhere(req.user);
 
     const grouped = await Ticket.findAll({
       where,

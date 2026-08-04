@@ -2,7 +2,7 @@
   <div>
     <div class="mb-6">
       <h1 class="text-xl font-bold text-ink-text">工单看板</h1>
-      <p class="text-sm text-ink-text-3 mt-1">{{ authStore.isInternal ? "分配给我的工单概览" : "我创建的工单概览" }}</p>
+      <p class="text-sm text-ink-text-3 mt-1">{{ scopeText }}</p>
     </div>
 
     <div v-if="loading" class="flex justify-center py-20">
@@ -32,7 +32,7 @@
       <div class="panel p-6">
         <h2 class="text-base font-semibold text-ink-text mb-4">最近工单</h2>
         <div v-if="stats.recent.length === 0" class="text-center py-10">
-          <p class="text-ink-text-3 text-sm">{{ authStore.isInternal ? "暂无分配给您的工单" : "暂无工单，去创建一个吧" }}</p>
+          <p class="text-ink-text-3 text-sm">{{ emptyText }}</p>
         </div>
         <div v-else class="divide-y divide-line">
           <router-link
@@ -54,7 +54,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from "vue";
+import { ref, reactive, computed, onMounted } from "vue";
 import { useRouter } from "vue-router";
 import { getTicketStats } from "../api/tickets";
 import { useAuthStore } from "../stores/auth";
@@ -62,6 +62,16 @@ import StatusBadge from "../components/StatusBadge.vue";
 
 const router = useRouter();
 const authStore = useAuthStore();
+
+// 看板统计口径与工单列表一致：管理员/研发主管看全部，其他内部角色看「我创建的 + 分配给我的」，客户看「我创建的」
+const scopeText = computed(() => {
+  if (authStore.canAccessAdmin) return "全部工单概览";
+  return authStore.isInternal ? "我创建的与分配给我的工单概览" : "我创建的工单概览";
+});
+const emptyText = computed(() => {
+  if (authStore.canAccessAdmin) return "暂无工单";
+  return authStore.isInternal ? "暂无与您相关的工单" : "暂无工单，去创建一个吧";
+});
 
 const loading = ref(false);
 const stats = reactive({
