@@ -26,5 +26,6 @@ router.put("/packages/:id/toggle", maintainerOnly, pkgCtrl.toggle);
 router.get("/packages/:id/versions", verCtrl.listVersions);
 router.post("/packages/:id/versions", maintainerOnly, verCtrl.createVersion);
 router.get("/versions/:vid/download", verCtrl.download);
+router.delete("/versions/:vid", maintainerOnly, verCtrl.deleteVersion);
 
 module.exports = router;

@@ -1,0 +1,56 @@
+# 更新日志（Changelog）
+
+所有值得注意的变更记录在此。格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)。
+
+本项目尚未正式发布版本号，以下按时间倒序记录。
+
+---
+
+## [未发布] — 2026-08-03
+
+### 新增
+- **数据重置脚本**：`npm run reset-data` 清空工单/评论/附件/通知/工具包等测试数据，保留用户与字典。支持 `--yes` 跳过确认。
+- **工单删除（单项 + 批量）**：管理后台支持单条删除和勾选多条后批量删除，级联清理评论/附件/通知/日志及磁盘文件。
+- **工具包版本删除**：维护者可删除版本（含物理文件），删的是当前版本时自动回退到最新剩余版本。
+- **数据库迁移机制**：`server/migrations/` + `npm run migrate`，按编号 SQL 文件顺序执行，幂等可重复。`npm run migrate -- --status` 查看状态。
+
+### 修复
+- **下载文件中文名乱码**：上传时 latin1→utf8 修复，下载时从 Content-Disposition 解析文件名兜底，历史乱码记录自动还原。
+- **管理后台权限**：前端入口从仅 `admin` 扩展为 `admin` + `dev_lead`，与后端一致。
+
+### 文档
+- `docs/deployment.md`：补充发布前备份、发布顺序、数据库结构变更规则（`sync()` 局限性 + ALTER 规范 + 危险脚本提醒）。
+- `docs/user-manual.md`：同步功能变化与权限变更。
+- 新增 `CHANGELOG.md`、`server/migrations/001_base.sql`（基线建表）、`server/migrations/runner.js`。
+
+---
+
+## [未发布] — 2026-07-31 ~ 08-02
+
+### 新增
+- **服务监控入口**：前台导航栏新增「服务监控」外链，仅研发相关角色可见，点击新标签页跳转。
+- **通知轮询全局化**：从 Dashboard 移到 App 层，登录态下所有页面均可接收站内通知。
+- **浏览器桌面通知常驻**：改为 sticky 通知，需用户手动关闭而非自动淡出。
+- **用户初始化脚本**：`npm run init-users` 支持幂等批量创建账号，含 admin/devlead/dev/customer/tester。
+- **工单附件支持**：创建工单时可上传附件（截图/文档等），评论中也可附带。
+
+### 变更
+- **主题系统**：新增「工程操作台·信号橙琥珀」暗色主题，明/暗双主题切换，偏好本地持久化。
+
+---
+
+## [未发布] — 早期上线
+
+### 核心功能
+- 用户注册/登录（JWT 鉴权）、角色体系（customer / data_maintenance / dev_lead / developer / tester / admin）
+- 工单 CRUD、状态流转（pending → processing → resolved → closed）、转交
+- 工单评论、操作日志、站内通知、桌面通知
+- 工单看板（Dashboard）：统计卡片 + 最近工单
+- 工具包中心：列表浏览、详情（Markdown 文档）、版本管理、上传/下载
+- 后台管理：用户管理（角色/启用停用）、工单管理（分配/状态变更）、字典管理
+- Markdown 编辑器（md-editor-v3）+ 图片粘贴/上传
+
+### 基础设施
+- 前端：Vue 3 + Vite + Element Plus + TailwindCSS + Pinia
+- 后端：Node.js + Express 5 + Sequelize 6（MySQL）+ Multer 文件上传
+- 部署：Nginx 反向代理 + PM2 守护，docs/deployment.md 完整文档

@@ -98,7 +98,21 @@ npm run seed
 
 若仅需建表而不写入演示数据，直接进行下一步，首次启动会自动建表。生产环境的管理员账号建议通过注册接口或单独脚本创建，并及时修改默认密码。
 
-### 5. 使用 PM2 启动
+### 5. 执行数据库迁移
+
+每次更新包含数据库结构变更时，在重启后端**之前**执行迁移：
+
+```bash
+# 查看待执行的迁移
+npm run migrate -- --status
+
+# 执行所有未执行的迁移
+npm run migrate
+```
+
+> 迁移脚本按 `server/migrations/` 目录下 `001_xxx.sql` 编号顺序执行，已执行的不会重复。
+
+### 6. 使用 PM2 启动
 
 ```bash
 pm2 start src/server.js --name qfeedback-server
@@ -114,14 +128,14 @@ pm2 logs qfeedback-server  # 查看日志
 pm2 restart qfeedback-server
 ```
 
-### 6. 验证后端
+### 7. 验证后端
 
 ```bash
 curl http://localhost:3000/api/health
 # 期望输出：{"status":"ok"}
 ```
 
-### 7. 上传目录
+### 8. 上传目录
 
 确保上传目录存在且进程可写：
 
@@ -228,11 +242,16 @@ certbot 会自动改写 Nginx 配置并配置 80 → 443 跳转与自动续期�
 ## 七、更新发布
 
 ```bash
+# 0) 发布前先备份（回滚的底牌，务必执行）
+mysqldump -u qfeedback -p question_feedback > backup_$(date +%F_%H%M).sql
+tar -czf uploads_$(date +%F_%H%M).tar.gz /var/www/question-feedback/server/uploads
+
 cd /var/www/question-feedback
 git pull
 
-# 后端：依赖有变更时重新安装并重启
+# 后端：执行数据库迁移（如有结构变更），再安装依赖并重启
 cd server
+npm run migrate
 npm install --omit=dev
 pm2 restart qfeedback-server
 
@@ -244,7 +263,25 @@ npm run build
 
 前端为纯静态文件，构建完成后 Nginx 即时生效，无需重启。
 
-> 数据库表结构变更：本项目使用 `sequelize.sync()` 自动同步模型。新增字段/表会在重启后端时自动创建；但 `sync()` **不会**安全地修改/删除已有列，涉及破坏性结构变更时请手动执行 SQL 迁移。
+> **发布顺序**：先后端、后前端。新前端会调用新接口，后端必须先就位；同时浏览器可能缓存旧前端页面，因此已有接口与字段需保持向下兼容，避免直接改名/删除。
+
+### 数据库结构变更（重要）
+
+本项目启动时使用 `sequelize.sync()`，它**只会自动创建尚不存在的新表**，**不会**为已有表添加新列，也不会修改/删除已有列：
+
+- **新增表**（新模型）：重启后端自动创建，无需手工处理。
+- **已有表新增字段**：`sync()` 不处理，部署新代码**之前**必须手工执行 SQL：
+
+  ```sql
+  -- 新字段务必允许 NULL 或给默认值，历史数据即自动兼容，通常无需刷数据
+  ALTER TABLE tickets ADD COLUMN new_field VARCHAR(100) NULL COMMENT '字段说明';
+  -- 若业务上历史数据必须有值，再回填：
+  -- UPDATE tickets SET new_field = '默认值' WHERE new_field IS NULL;
+  ```
+
+- **生产环境禁止**使用 `sync({ alter: true })`（可能改写已有列）和 `sync({ force: true })`（清空全库）；`npm run seed`、`npm run reset-data` 等脚本仅用于本地/测试环境。
+- **删列/改列/改名**等破坏性变更：先确保所有版本代码不再引用旧列，备份数据库后再手工执行 SQL；建议采用"新增 → 迁移回填 → 下个版本删除旧列"的分步方式。
+- 每次发布若包含结构变更，请在发布记录（CHANGELOG）中注明对应 SQL，便于其他环境同步。
 
 ---
 

@@ -45,10 +45,25 @@
         <el-option label="Bug" value="bug" />
         <el-option label="使用问题" value="question" />
       </el-select>
+      <el-button
+        class="ml-auto"
+        type="danger"
+        :disabled="selectedTickets.length === 0"
+        @click="handleBatchDelete"
+      >
+        批量删除{{ selectedTickets.length ? `（${selectedTickets.length}）` : "" }}
+      </el-button>
     </div>
 
     <div class="panel p-4">
-      <el-table :data="tickets" v-loading="loading" stripe :row-class-name="rowClassName">
+      <el-table
+        :data="tickets"
+        v-loading="loading"
+        stripe
+        :row-class-name="rowClassName"
+        @selection-change="handleSelectionChange"
+      >
+        <el-table-column type="selection" width="50" />
         <el-table-column prop="ticketNo" label="工单号" width="160" />
         <el-table-column
           prop="title"
@@ -87,7 +102,7 @@
             formatTime(row.updatedAt)
           }}</template>
         </el-table-column>
-        <el-table-column label="操作" width="180" fixed="right">
+        <el-table-column label="操作" width="240" fixed="right">
           <template #default="{ row }">
             <el-button
               size="small"
@@ -115,6 +130,9 @@
                 </el-dropdown-menu>
               </template>
             </el-dropdown>
+            <el-button size="small" type="danger" text @click="handleDelete(row)">
+              删除
+            </el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -156,12 +174,13 @@
 
 <script setup>
 import { ref, reactive, onMounted } from "vue";
-import { ElMessage } from "element-plus";
+import { ElMessage, ElMessageBox } from "element-plus";
 import * as adminApi from "../../api/admin";
 import StatusBadge from "../../components/StatusBadge.vue";
 
 const tickets = ref([]);
 const users = ref([]);
+const selectedTickets = ref([]);
 const loading = ref(false);
 const page = ref(1);
 const pageSize = ref(20);
@@ -249,6 +268,47 @@ async function handleStatusChange(row, status) {
   try {
     await adminApi.updateTicket(row.id, { status });
     ElMessage.success("状态变更成功");
+    fetchTickets();
+  } catch (error) {
+    // 错误已在拦截器中处理
+  }
+}
+
+function handleSelectionChange(rows) {
+  selectedTickets.value = rows;
+}
+
+async function handleDelete(row) {
+  try {
+    await ElMessageBox.confirm(
+      `确定删除工单「${row.ticketNo}」吗？评论、附件、通知等关联数据将一并删除，无法恢复。`,
+      "提示",
+      { type: "warning", confirmButtonText: "删除", confirmButtonClass: "el-button--danger" },
+    );
+  } catch (_) { return; }
+  try {
+    await adminApi.deleteTicket(row.id);
+    ElMessage.success("删除成功");
+    fetchTickets();
+  } catch (error) {
+    // 错误已在拦截器中处理
+  }
+}
+
+async function handleBatchDelete() {
+  const ids = selectedTickets.value.map((t) => t.id);
+  if (ids.length === 0) return;
+  try {
+    await ElMessageBox.confirm(
+      `确定删除选中的 ${ids.length} 条工单吗？评论、附件、通知等关联数据将一并删除，无法恢复。`,
+      "提示",
+      { type: "warning", confirmButtonText: "删除", confirmButtonClass: "el-button--danger" },
+    );
+  } catch (_) { return; }
+  try {
+    await adminApi.batchDeleteTickets(ids);
+    ElMessage.success("批量删除成功");
+    selectedTickets.value = [];
     fetchTickets();
   } catch (error) {
     // 错误已在拦截器中处理

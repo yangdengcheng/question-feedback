@@ -2,6 +2,7 @@ const fs = require("fs");
 const path = require("path");
 const { sequelize, ToolPackage, ToolPackageVersion, User } = require("../models");
 const { MAINTAINER_ROLES } = require("../middleware/roles");
+const { repairFileName, removeFileQuiet } = require("../utils/file");
 
 async function listVersions(req, res, next) {
   try {
@@ -69,10 +70,40 @@ async function download(req, res, next) {
     }
     const abs = path.resolve(ver.fileUrl);
     if (!fs.existsSync(abs)) return res.status(404).json({ message: "文件不存在" });
-    res.download(abs, ver.fileName);
+    res.download(abs, repairFileName(ver.fileName));
   } catch (error) {
     next(error);
   }
 }
 
-module.exports = { listVersions, createVersion, download };
+async function deleteVersion(req, res, next) {
+  try {
+    const ver = await ToolPackageVersion.findByPk(req.params.vid);
+    if (!ver) return res.status(404).json({ message: "版本不存在" });
+    const pkg = await ToolPackage.findByPk(ver.packageId);
+    if (!pkg) return res.status(404).json({ message: "工具包不存在" });
+    const t = await sequelize.transaction();
+    try {
+      await ver.destroy({ transaction: t });
+      // 删除的是当前版本时，回退到最新剩余版本
+      if (pkg.currentVersionId === ver.id) {
+        const latest = await ToolPackageVersion.findOne({
+          where: { packageId: pkg.id },
+          order: [["createdAt", "DESC"]],
+          transaction: t,
+        });
+        await pkg.update({ currentVersionId: latest ? latest.id : null }, { transaction: t });
+      }
+      await t.commit();
+    } catch (error) {
+      await t.rollback();
+      throw error;
+    }
+    removeFileQuiet(ver.fileUrl);
+    res.json({ message: "版本已删除" });
+  } catch (error) {
+    next(error);
+  }
+}
+
+module.exports = { listVersions, createVersion, download, deleteVersion };

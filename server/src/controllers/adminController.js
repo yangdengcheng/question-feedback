@@ -1,7 +1,8 @@
-const { Ticket, User } = require("../models");
+const { sequelize, Ticket, User, Comment, Attachment, Notification, TicketLog } = require("../models");
 const { Op } = require("sequelize");
 const { notifyAssigned, notifyStatusChange } = require("../services/notificationService");
 const { logAction } = require("../services/ticketLogService");
+const { removeFileQuiet } = require("../utils/file");
 
 async function listTickets(req, res, next) {
   try {
@@ -62,6 +63,47 @@ async function updateTicket(req, res, next) {
   } catch (error) { next(error); }
 }
 
+// 删除工单及其关联数据（通知、附件+磁盘文件、评论、操作日志）
+async function destroyTickets(ids) {
+  const tickets = await Ticket.findAll({ where: { id: ids }, attributes: ["id"] });
+  if (tickets.length === 0) return 0;
+  const ticketIds = tickets.map((t) => t.id);
+  const attachments = await Attachment.findAll({ where: { ticketId: ticketIds }, attributes: ["filePath"] });
+  const t = await sequelize.transaction();
+  try {
+    await Notification.destroy({ where: { ticketId: ticketIds }, transaction: t });
+    await Attachment.destroy({ where: { ticketId: ticketIds }, transaction: t });
+    await Comment.destroy({ where: { ticketId: ticketIds }, transaction: t });
+    await TicketLog.destroy({ where: { ticketId: ticketIds }, transaction: t });
+    await Ticket.destroy({ where: { id: ticketIds }, transaction: t });
+    await t.commit();
+  } catch (error) {
+    await t.rollback();
+    throw error;
+  }
+  attachments.forEach((a) => removeFileQuiet(a.filePath));
+  return ticketIds.length;
+}
+
+async function deleteTicket(req, res, next) {
+  try {
+    const count = await destroyTickets([req.params.id]);
+    if (!count) return res.status(404).json({ message: "工单不存在" });
+    res.json({ message: "删除成功" });
+  } catch (error) { next(error); }
+}
+
+async function batchDeleteTickets(req, res, next) {
+  try {
+    const { ids } = req.body;
+    if (!Array.isArray(ids) || ids.length === 0) {
+      return res.status(400).json({ message: "请选择要删除的工单" });
+    }
+    const count = await destroyTickets(ids);
+    res.json({ message: `已删除 ${count} 条工单`, count });
+  } catch (error) { next(error); }
+}
+
 async function listUsers(req, res, next) {
   try {
     const users = await User.findAll({ attributes: { exclude: ["passwordHash"] }, order: [["createdAt", "DESC"]] });
@@ -104,4 +146,4 @@ async function createUser(req, res, next) {
   } catch (error) { next(error); }
 }
 
-module.exports = { listTickets, updateTicket, listUsers, updateUser, createUser };
+module.exports = { listTickets, updateTicket, deleteTicket, batchDeleteTickets, listUsers, updateUser, createUser };

@@ -91,9 +91,18 @@
               <div v-for="ver in versions" :key="ver.id" class="border-l-2 border-line pl-3">
                 <div class="flex items-center justify-between gap-2">
                   <span class="text-sm font-semibold text-ink-text tnum">v{{ ver.version }}</span>
-                  <button class="text-xs text-accent-text hover:underline inline-flex items-center gap-1" @click="downloadVer(ver)">
-                    <el-icon :size="12"><Download /></el-icon>下载
-                  </button>
+                  <div class="flex items-center gap-3">
+                    <button class="text-xs text-accent-text hover:underline inline-flex items-center gap-1" @click="downloadVer(ver)">
+                      <el-icon :size="12"><Download /></el-icon>下载
+                    </button>
+                    <button
+                      v-if="authStore.isMaintainer"
+                      class="text-xs text-red-400 hover:underline inline-flex items-center gap-1"
+                      @click="deleteVer(ver)"
+                    >
+                      <el-icon :size="12"><Delete /></el-icon>删除
+                    </button>
+                  </div>
                 </div>
                 <p v-if="ver.releaseNote" class="text-xs text-ink-text-2 mt-1 whitespace-pre-wrap">{{ ver.releaseNote }}</p>
                 <p class="text-xs text-ink-text-3 tnum mt-1">{{ formatTime(ver.createdAt) }} · {{ ver.creator?.realName || "" }}</p>
@@ -176,7 +185,7 @@ import "md-editor-v3/lib/style.css";
 import { useAuthStore } from "../stores/auth";
 import {
   getPackageDetail, updatePackage, togglePackage, listVersions,
-  createVersion, downloadVersion, listDicts,
+  createVersion, downloadVersion, deleteVersion, listDicts,
 } from "../api/toolkit";
 import request from "../api/request";
 import MarkdownEditor from "../components/MarkdownEditor.vue";
@@ -227,6 +236,22 @@ async function downloadCurrent() {
 }
 async function downloadVer(ver) {
   await downloadVersion(ver.id, ver.fileName);
+}
+
+// 删除版本
+async function deleteVer(ver) {
+  try {
+    await ElMessageBox.confirm(
+      `确定删除版本 v${ver.version} 吗？对应文件也会被删除，无法恢复。`,
+      "提示",
+      { type: "warning", confirmButtonText: "删除", confirmButtonClass: "el-button--danger" },
+    );
+  } catch (_) { return; }
+  try {
+    await deleteVersion(ver.id);
+    ElMessage.success("版本已删除");
+    await Promise.all([fetchDetail(), fetchVersions()]);
+  } catch (e) { /* 拦截器已处理 */ }
 }
 
 // 发布新版本

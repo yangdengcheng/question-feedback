@@ -14,7 +14,8 @@ request.interceptors.request.use(
 );
 
 request.interceptors.response.use(
-  (response) => response.data,
+  // 文件下载（blob）需要读取响应头，返回完整 response
+  (response) => (response.config.responseType === "blob" ? response : response.data),
   (error) => {
     const message = error.response?.data?.message || "请求失败";
     const url = error.config?.url || "";

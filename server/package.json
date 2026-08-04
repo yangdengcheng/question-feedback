@@ -10,7 +10,9 @@
     "start": "node src/server.js",
     "test": "jest --forceExit --detectOpenHandles",
     "seed": "node src/seed.js",
-    "init-users": "node src/initUsers.js"
+    "init-users": "node src/initUsers.js",
+    "reset-data": "node src/resetData.js",
+    "migrate": "node migrations/runner.js"
   },
   "keywords": [],
   "author": "",
