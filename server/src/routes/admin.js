@@ -13,6 +13,8 @@ router.post("/tickets/batch-delete", adminController.batchDeleteTickets);
 router.delete("/tickets/:id", adminController.deleteTicket);
 router.get("/users", adminController.listUsers);
 router.post("/users", adminController.createUser);
+router.post("/users/batch-delete", adminController.batchDeleteUsers);
 router.patch("/users/:id", adminController.updateUser);
+router.delete("/users/:id", adminController.deleteUser);
 
 module.exports = router;

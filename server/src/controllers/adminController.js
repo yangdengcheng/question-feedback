@@ -1,4 +1,4 @@
-const { sequelize, Ticket, User, Comment, Attachment, Notification, TicketLog } = require("../models");
+const { sequelize, Ticket, User, Comment, Attachment, Notification, TicketLog, ToolPackage, ToolPackageVersion } = require("../models");
 const { Op } = require("sequelize");
 const { notifyAssigned, notifyStatusChange } = require("../services/notificationService");
 const { logAction } = require("../services/ticketLogService");
@@ -146,4 +146,92 @@ async function createUser(req, res, next) {
   } catch (error) { next(error); }
 }
 
-module.exports = { listTickets, updateTicket, deleteTicket, batchDeleteTickets, listUsers, updateUser, createUser };
+// 删除用户并级联清理：其创建的工单（含评论/附件/通知/日志）、其在他人工单下的评论与附件、
+// 其收到的通知、处理人引用，工具包/版本创建人移交操作者，最后删除磁盘附件文件
+async function destroyUsers(userIds, operatorId) {
+  const users = await User.findAll({ where: { id: userIds }, attributes: ["id"] });
+  if (users.length === 0) return 0;
+  const ids = users.map((u) => u.id);
+
+  // 这些用户创建的工单（需级联删除）
+  const ownedTickets = await Ticket.findAll({ where: { userId: ids }, attributes: ["id"] });
+  const ticketIds = ownedTickets.map((t) => t.id);
+  // 这些用户发表的评论（含他人工单下的）
+  const ownComments = await Comment.findAll({ where: { userId: ids }, attributes: ["id"] });
+  const commentIds = ownComments.map((c) => c.id);
+
+  // 待删磁盘文件：其上传的附件 / 属于被删工单的附件 / 属于其评论的附件
+  const attachOr = [{ uploadedBy: ids }];
+  if (ticketIds.length) attachOr.push({ ticketId: ticketIds });
+  if (commentIds.length) attachOr.push({ commentId: commentIds });
+  const attachments = await Attachment.findAll({ where: { [Op.or]: attachOr }, attributes: ["filePath"] });
+
+  const t = await sequelize.transaction();
+  try {
+    // 通知：其收到的 + 属于被删工单的
+    const notiOr = [{ userId: ids }];
+    if (ticketIds.length) notiOr.push({ ticketId: ticketIds });
+    await Notification.destroy({ where: { [Op.or]: notiOr }, transaction: t });
+    // 附件须先于评论/工单/日志删除（外键约束）
+    await Attachment.destroy({ where: { [Op.or]: attachOr }, transaction: t });
+    // 评论：被删工单下的 + 其发表的
+    const commentDelOr = [{ userId: ids }];
+    if (ticketIds.length) commentDelOr.push({ ticketId: ticketIds });
+    await Comment.destroy({ where: { [Op.or]: commentDelOr }, transaction: t });
+    // 操作日志：被删工单的 + 其操作的
+    const logDelOr = [{ userId: ids }];
+    if (ticketIds.length) logDelOr.push({ ticketId: ticketIds });
+    await TicketLog.destroy({ where: { [Op.or]: logDelOr }, transaction: t });
+    if (ticketIds.length) await Ticket.destroy({ where: { id: ticketIds }, transaction: t });
+    // 剩余工单的处理人引用置空
+    await Ticket.update({ assigneeId: null }, { where: { assigneeId: ids }, transaction: t });
+    // 工具包/版本创建人移交操作者
+    await ToolPackage.update({ createdBy: operatorId }, { where: { createdBy: ids }, transaction: t });
+    await ToolPackageVersion.update({ createdBy: operatorId }, { where: { createdBy: ids }, transaction: t });
+    await User.destroy({ where: { id: ids }, transaction: t });
+    await t.commit();
+  } catch (error) {
+    await t.rollback();
+    throw error;
+  }
+  attachments.forEach((a) => removeFileQuiet(a.filePath));
+  return ids.length;
+}
+
+// 删除前校验：不能删自己、不能删最后一个管理员
+async function validateUserDeletion(ids, operatorId) {
+  if (ids.includes(operatorId)) return "不能删除当前登录用户";
+  const targets = await User.findAll({ where: { id: ids }, attributes: ["id", "role"] });
+  if (targets.some((u) => u.role === "admin")) {
+    const adminLeft = await User.count({ where: { role: "admin", id: { [Op.notIn]: ids } } });
+    if (adminLeft === 0) return "不能删除最后一个管理员";
+  }
+  return null;
+}
+
+async function deleteUser(req, res, next) {
+  try {
+    const id = parseInt(req.params.id, 10);
+    const user = await User.findByPk(id);
+    if (!user) return res.status(404).json({ message: "用户不存在" });
+    const reason = await validateUserDeletion([id], req.user.id);
+    if (reason) return res.status(400).json({ message: reason });
+    await destroyUsers([id], req.user.id);
+    res.json({ message: "删除成功" });
+  } catch (error) { next(error); }
+}
+
+async function batchDeleteUsers(req, res, next) {
+  try {
+    const { ids } = req.body;
+    if (!Array.isArray(ids) || ids.length === 0) {
+      return res.status(400).json({ message: "请选择要删除的用户" });
+    }
+    const reason = await validateUserDeletion(ids, req.user.id);
+    if (reason) return res.status(400).json({ message: reason });
+    const count = await destroyUsers(ids, req.user.id);
+    res.json({ message: `已删除 ${count} 个用户`, count });
+  } catch (error) { next(error); }
+}
+
+module.exports = { listTickets, updateTicket, deleteTicket, batchDeleteTickets, listUsers, updateUser, createUser, deleteUser, batchDeleteUsers };

@@ -7,3 +7,5 @@ export function batchDeleteTickets(ids) { return request.post("/admin/tickets/ba
 export function listUsers() { return request.get("/admin/users"); }
 export function createUser(data) { return request.post("/admin/users", data); }
 export function updateUser(id, data) { return request.patch(`/admin/users/${id}`, data); }
+export function deleteUser(id) { return request.delete(`/admin/users/${id}`); }
+export function batchDeleteUsers(ids) { return request.post("/admin/users/batch-delete", { ids }); }

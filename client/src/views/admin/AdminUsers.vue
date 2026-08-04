@@ -2,13 +2,19 @@
   <div>
     <div class="flex items-center justify-between mb-6">
       <h1 class="text-xl font-bold text-ink-text">用户管理</h1>
-      <button class="btn-accent px-4 py-2 text-sm" @click="showCreateDialog = true">
-        <el-icon class="mr-1"><Plus /></el-icon>新建用户
-      </button>
+      <div class="flex items-center gap-3">
+        <el-button type="danger" :disabled="selectedUsers.length === 0" @click="handleBatchDelete">
+          批量删除{{ selectedUsers.length ? `（${selectedUsers.length}）` : "" }}
+        </el-button>
+        <button class="btn-accent px-4 py-2 text-sm" @click="showCreateDialog = true">
+          <el-icon class="mr-1"><Plus /></el-icon>新建用户
+        </button>
+      </div>
     </div>
 
     <div class="panel p-4">
-      <el-table :data="users" v-loading="loading" stripe>
+      <el-table :data="users" v-loading="loading" stripe @selection-change="handleSelectionChange">
+        <el-table-column type="selection" width="50" :selectable="(row) => row.id !== authStore.user?.id" />
         <el-table-column prop="username" label="用户名" width="130" />
         <el-table-column prop="realName" label="姓名" width="100" />
         <el-table-column prop="email" label="邮箱" min-width="180" show-overflow-tooltip>
@@ -39,13 +45,20 @@
             </span>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="240" fixed="right">
+        <el-table-column label="操作" width="300" fixed="right">
           <template #default="{ row }">
             <el-button size="small" text type="primary" @click="openEditDialog(row)">编辑</el-button>
             <el-button size="small" text :type="row.isActive ? 'danger' : 'success'" @click="toggleActive(row)">
               {{ row.isActive ? "禁用" : "启用" }}
             </el-button>
             <el-button size="small" text type="primary" @click="openRoleDialog(row)">变更角色</el-button>
+            <el-button
+              v-if="row.id !== authStore.user?.id"
+              size="small" text type="danger"
+              @click="handleDelete(row)"
+            >
+              删除
+            </el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -113,10 +126,13 @@
 
 <script setup>
 import { ref, reactive, onMounted } from "vue";
-import { ElMessage } from "element-plus";
+import { ElMessage, ElMessageBox } from "element-plus";
 import * as adminApi from "../../api/admin";
+import { useAuthStore } from "../../stores/auth";
 
+const authStore = useAuthStore();
 const users = ref([]);
+const selectedUsers = ref([]);
 const loading = ref(false);
 const showCreateDialog = ref(false);
 const showRoleDialog = ref(false);
@@ -207,6 +223,43 @@ async function handleEdit() {
     await adminApi.updateUser(editForm.id, { realName: editForm.realName, email: editForm.email });
     ElMessage.success("用户信息更新成功");
     showEditDialog.value = false;
+    fetchUsers();
+  } catch (e) {}
+}
+
+function handleSelectionChange(rows) {
+  selectedUsers.value = rows;
+}
+
+async function handleDelete(row) {
+  try {
+    await ElMessageBox.confirm(
+      `确定删除用户「${row.realName}（${row.username}）」吗？其创建的工单、评论、附件、通知等关联数据将一并删除，无法恢复。`,
+      "提示",
+      { type: "warning", confirmButtonText: "删除", confirmButtonClass: "el-button--danger" },
+    );
+  } catch (_) { return; }
+  try {
+    await adminApi.deleteUser(row.id);
+    ElMessage.success("删除成功");
+    fetchUsers();
+  } catch (e) {}
+}
+
+async function handleBatchDelete() {
+  const ids = selectedUsers.value.map((u) => u.id);
+  if (ids.length === 0) return;
+  try {
+    await ElMessageBox.confirm(
+      `确定删除选中的 ${ids.length} 个用户吗？他们创建的工单、评论、附件、通知等关联数据将一并删除，无法恢复。`,
+      "提示",
+      { type: "warning", confirmButtonText: "删除", confirmButtonClass: "el-button--danger" },
+    );
+  } catch (_) { return; }
+  try {
+    await adminApi.batchDeleteUsers(ids);
+    ElMessage.success("批量删除成功");
+    selectedUsers.value = [];
     fetchUsers();
   } catch (e) {}
 }
