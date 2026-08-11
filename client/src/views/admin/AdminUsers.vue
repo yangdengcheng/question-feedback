@@ -13,27 +13,34 @@
     </div>
 
     <div class="panel p-4">
-      <el-table :data="users" v-loading="loading" stripe @selection-change="handleSelectionChange">
+      <el-table ref="tableRef" :data="users" v-loading="loading" stripe :max-height="tableHeight" @selection-change="handleSelectionChange">
         <el-table-column type="selection" width="50" :selectable="(row) => row.id !== authStore.user?.id" />
-        <el-table-column prop="username" label="用户名" width="130" />
-        <el-table-column prop="realName" label="姓名" width="100" />
-        <el-table-column prop="email" label="邮箱" min-width="180" show-overflow-tooltip>
+        <el-table-column prop="username" label="用户名" width="130" align="center" />
+        <el-table-column prop="realName" :label="nameHeaderLabel" width="130" align="center">
+          <template #default="{ row }">
+            <span :class="isOnline(row.lastActiveAt) ? 'text-green-400 font-medium' : ''">{{ row.realName }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column prop="email" label="邮箱" min-width="180" align="center" show-overflow-tooltip>
           <template #default="{ row }">{{ row.email || "-" }}</template>
         </el-table-column>
-        <el-table-column label="角色" width="130">
+        <el-table-column label="角色" width="130" align="center">
           <template #default="{ row }">
             <el-tag :type="roleTagType(row.role)" size="small">{{ roleLabel(row.role) }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="状态" width="80">
+        <el-table-column label="状态" width="80" align="center">
           <template #default="{ row }">
             <el-tag :type="row.isActive ? 'success' : 'danger'" size="small">{{ row.isActive ? "启用" : "禁用" }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="注册时间" width="150">
+        <el-table-column label="最后登录时间" width="150" align="center">
+          <template #default="{ row }">{{ formatTime(row.lastActiveAt) || "-" }}</template>
+        </el-table-column>
+        <el-table-column label="注册时间" width="150" align="center">
           <template #default="{ row }">{{ formatTime(row.createdAt) }}</template>
         </el-table-column>
-        <el-table-column label="在线" width="80">
+        <el-table-column label="在线" width="80" align="center">
           <template #default="{ row }">
             <span v-if="isOnline(row.lastActiveAt)" class="inline-flex items-center gap-1">
               <span class="w-2 h-2 rounded-full bg-green-400 inline-block"></span>
@@ -45,7 +52,7 @@
             </span>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="300" fixed="right">
+        <el-table-column label="操作" width="300" align="center" fixed="right">
           <template #default="{ row }">
             <el-button size="small" text type="primary" @click="openEditDialog(row)">编辑</el-button>
             <el-button size="small" text :type="row.isActive ? 'danger' : 'success'" @click="toggleActive(row)">
@@ -125,7 +132,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from "vue";
+import { ref, reactive, computed, onMounted, onBeforeUnmount, nextTick } from "vue";
 import { ElMessage, ElMessageBox } from "element-plus";
 import * as adminApi from "../../api/admin";
 import { useAuthStore } from "../../stores/auth";
@@ -141,6 +148,18 @@ const creating = ref(false);
 const roleDialogUser = ref(null);
 const newRole = ref("");
 const createFormRef = ref(null);
+const tableRef = ref(null);
+const tableHeight = ref(500);
+
+// 表格占满剩余可视高度：表体内部滚动、表头固定，页面不出现纵向滚动条
+function calcTableHeight() {
+  nextTick(() => {
+    const el = tableRef.value?.$el;
+    if (!el) return;
+    const top = el.getBoundingClientRect().top;
+    tableHeight.value = Math.max(240, window.innerHeight - top - 50);
+  });
+}
 const editForm = reactive({ id: null, username: "", realName: "", email: "" });
 
 const roleOptions = [
@@ -167,7 +186,15 @@ const createRules = {
   role: [{ required: true, message: "请选择角色", trigger: "change" }],
 };
 
-onMounted(() => { fetchUsers(); });
+onMounted(() => {
+  fetchUsers();
+  calcTableHeight();
+  window.addEventListener("resize", calcTableHeight);
+});
+
+onBeforeUnmount(() => {
+  window.removeEventListener("resize", calcTableHeight);
+});
 
 async function fetchUsers() {
   loading.value = true;
@@ -269,9 +296,24 @@ function isOnline(lastActiveAt) {
   return Date.now() - new Date(lastActiveAt).getTime() < 5 * 60 * 1000; // 5 minutes
 }
 
+// 姓名列标题：动态展示在线人数/总人数，如“姓名（2/20）”
+const nameHeaderLabel = computed(() => {
+  const online = users.value.filter((u) => isOnline(u.lastActiveAt)).length;
+  return `姓名（${online}/${users.value.length}）`;
+});
+
+// 固定按东八区（Asia/Shanghai）渲染，避免浏览器本地时区不是 +8 时显示错误
+const shanghaiFmt = new Intl.DateTimeFormat("en-CA", {
+  timeZone: "Asia/Shanghai",
+  year: "numeric", month: "2-digit", day: "2-digit",
+  hour: "2-digit", minute: "2-digit", hourCycle: "h23",
+});
+
 function formatTime(time) {
   if (!time) return "";
   const d = new Date(time);
-  return `${d.getFullYear()}/${d.getMonth() + 1}/${d.getDate()} ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+  if (Number.isNaN(d.getTime())) return "";
+  const p = Object.fromEntries(shanghaiFmt.formatToParts(d).map(({ type, value }) => [type, value]));
+  return `${p.year}/${p.month}/${p.day} ${p.hour}:${p.minute}`;
 }
 </script>
