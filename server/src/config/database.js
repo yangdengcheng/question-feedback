@@ -9,6 +9,7 @@ const sequelize = new Sequelize(
     host: process.env.DB_HOST || "localhost",
     port: parseInt(process.env.DB_PORT, 10) || 3306,
     dialect: "mysql",
+    timezone: "+08:00", // 按东八区读写 MySQL DATETIME，保证库里存的是北京时间
     logging: false,
     define: {
       timestamps: true,

@@ -12,7 +12,7 @@
     <script>
       // 防闪烁：Vue 挂载前读取记忆主题并设置 data-theme（缺省暗色）
       (function () {
-        var t = "dark";
+        var t = "light";
         try {
           var s = localStorage.getItem("theme");
           if (s === "light" || s === "dark") t = s;

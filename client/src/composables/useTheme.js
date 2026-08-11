@@ -1,7 +1,7 @@
 // client/src/composables/useTheme.js
 import { ref, readonly } from "vue";
 
-const theme = ref("dark");
+const theme = ref("light");
 
 // 初始化：读 localStorage（index.html 内联脚本已设 data-theme，此处同步 ref）
 try {
