@@ -8,3 +8,7 @@ client/dist/
 .agents/
 .claude/
 skills-lock.json
+docs/.chrome-tmp-profile/
+docs/.training-print.html
+docs/training-guide.pdf
+pandoc-*/
