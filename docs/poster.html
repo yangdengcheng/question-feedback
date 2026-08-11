@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>问题反馈工单平台 · 使用海报</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #060a14;
+    font-family: "PingFang SC", "Microsoft YaHei", "Segoe UI", sans-serif;
+    color: #e6edf6;
+    display: flex;
+    justify-content: center;
+    padding: 24px 0;
+  }
+  .poster {
+    width: 1080px;
+    background:
+      radial-gradient(900px 500px at 85% -10%, rgba(251, 191, 36, 0.06), transparent 60%),
+      linear-gradient(rgba(148, 163, 184, 0.05) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(148, 163, 184, 0.05) 1px, transparent 1px),
+      #0b1120;
+    background-size: auto, 32px 32px, 32px 32px, auto;
+    border: 1px solid rgba(148, 163, 184, 0.18);
+    padding: 64px 72px 56px;
+  }
+  .mono { font-family: "JetBrains Mono", Consolas, "Courier New", monospace; }
+
+  /* 头部 */
+  .tag {
+    display: inline-block;
+    font-size: 13px;
+    letter-spacing: 3px;
+    color: #fbbf24;
+    border: 1px solid rgba(251, 191, 36, 0.4);
+    background: rgba(251, 191, 36, 0.08);
+    padding: 6px 14px;
+    border-radius: 4px;
+    margin-bottom: 22px;
+  }
+  h1 {
+    font-size: 56px;
+    font-weight: 800;
+    letter-spacing: 2px;
+    line-height: 1.2;
+  }
+  h1 em { font-style: normal; color: #fbbf24; }
+  .sub {
+    margin-top: 14px;
+    font-size: 20px;
+    color: #9aa7bc;
+    letter-spacing: 1px;
+  }
+  .urlbar {
+    margin-top: 26px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    background: #121a2b;
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    border-left: 4px solid #f59e0b;
+    border-radius: 6px;
+    padding: 16px 20px;
+    font-size: 22px;
+  }
+  .urlbar .label { font-size: 14px; color: #5c6b82; letter-spacing: 2px; }
+  .urlbar .addr { color: #fbbf24; font-size: 24px; font-weight: 700; }
+
+  /* 登录条 */
+  .login {
+    margin-top: 20px;
+    display: flex;
+    gap: 16px;
+  }
+  .login .cell {
+    flex: 1;
+    background: #121a2b;
+    border: 1px solid rgba(148, 163, 184, 0.16);
+    border-radius: 6px;
+    padding: 18px 22px;
+  }
+  .login .k { font-size: 14px; color: #5c6b82; letter-spacing: 2px; margin-bottom: 8px; }
+  .login .v { font-size: 21px; color: #e6edf6; }
+  .login .v b { color: #fbbf24; }
+
+  /* 区块标题 */
+  .sec {
+    margin-top: 48px;
+    display: flex;
+    align-items: baseline;
+    gap: 14px;
+  }
+  .sec .no { color: #f59e0b; font-size: 18px; font-weight: 700; }
+  .sec h2 {
+    font-size: 28px;
+    font-weight: 800;
+    letter-spacing: 1px;
+    border-left: 5px solid #f59e0b;
+    padding-left: 14px;
+  }
+  .sec .hint { font-size: 15px; color: #5c6b82; }
+
+  /* 流程 */
+  .flow {
+    margin-top: 24px;
+    display: flex;
+    align-items: stretch;
+    gap: 0;
+  }
+  .step {
+    flex: 1;
+    background: #121a2b;
+    border: 1px solid rgba(148, 163, 184, 0.16);
+    border-top: 4px solid var(--c);
+    border-radius: 6px;
+    padding: 20px 18px;
+    position: relative;
+  }
+  .step + .step { margin-left: 34px; }
+  .step + .step::before {
+    content: "▶";
+    position: absolute;
+    left: -27px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #5c6b82;
+    font-size: 14px;
+  }
+  .step .st { font-size: 24px; font-weight: 800; color: var(--c); }
+  .step .who { margin-top: 4px; font-size: 13px; color: #5c6b82; letter-spacing: 1px; }
+  .step .desc { margin-top: 10px; font-size: 15px; color: #9aa7bc; line-height: 1.6; }
+
+  /* 角色三卡 */
+  .roles { margin-top: 24px; display: flex; gap: 20px; }
+  .role {
+    flex: 1;
+    background: #121a2b;
+    border: 1px solid rgba(148, 163, 184, 0.16);
+    border-radius: 6px;
+    padding: 24px 22px;
+  }
+  .role h3 { font-size: 22px; font-weight: 800; color: #fbbf24; }
+  .role .scope {
+    margin-top: 10px;
+    font-size: 13px;
+    color: #9aa7bc;
+    background: rgba(251, 191, 36, 0.08);
+    border: 1px solid rgba(251, 191, 36, 0.25);
+    border-radius: 4px;
+    padding: 6px 10px;
+    display: inline-block;
+  }
+  .role ul { margin-top: 14px; list-style: none; }
+  .role li {
+    font-size: 16px;
+    color: #e6edf6;
+    line-height: 2;
+    padding-left: 18px;
+    position: relative;
+  }
+  .role li::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 50%;
+    width: 8px;
+    height: 2px;
+    background: #f59e0b;
+    transform: translateY(-50%);
+  }
+
+  /* 通知条 */
+  .notice {
+    margin-top: 24px;
+    background: #121a2b;
+    border: 1px solid rgba(56, 189, 248, 0.3);
+    border-left: 4px solid #38bdf8;
+    border-radius: 6px;
+    padding: 20px 24px;
+    display: flex;
+    gap: 28px;
+  }
+  .notice .item { flex: 1; }
+  .notice .t { font-size: 18px; font-weight: 700; color: #38bdf8; }
+  .notice .d { margin-top: 8px; font-size: 15px; color: #9aa7bc; line-height: 1.7; }
+
+  /* 底部 */
+  .foot {
+    margin-top: 52px;
+    border-top: 1px solid rgba(148, 163, 184, 0.2);
+    padding-top: 26px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+  }
+  .slogan { font-size: 20px; letter-spacing: 3px; color: #e6edf6; font-weight: 700; }
+  .slogan span { color: #fbbf24; }
+  .doc { text-align: right; font-size: 14px; color: #5c6b82; line-height: 1.9; }
+  .doc b { color: #9aa7bc; }
+</style>
+</head>
+<body>
+<div class="poster">
+
+  <div class="tag mono">QUESTION FEEDBACK · 内部使用</div>
+  <h1>问题反馈工单平台<br><em>一张图上手</em></h1>
+  <div class="sub">事事有记录 · 流程可追踪 · 进度可查询</div>
+
+  <div class="urlbar">
+    <span class="label mono">URL</span>
+    <span class="addr mono">http://58.221.192.245:3333</span>
+    <span class="label" style="margin-left:auto">推荐 Chrome / Edge</span>
+  </div>
+
+  <div class="login">
+    <div class="cell">
+      <div class="k mono">账号</div>
+      <div class="v">登录名 = 姓名全拼，如 张三 → <b class="mono">zhangsan</b></div>
+    </div>
+    <div class="cell">
+      <div class="k mono">初始密码</div>
+      <div class="v"><b class="mono">Ly123456</b>（新成员可注册，默认客户角色）</div>
+    </div>
+  </div>
+
+  <div class="sec">
+    <span class="no mono">01</span>
+    <h2>工单闭环四步走</h2>
+    <span class="hint">客户提交 → 研发处理 → 客户确认</span>
+  </div>
+  <div class="flow">
+    <div class="step" style="--c:#f59e0b">
+      <div class="st">待处理</div>
+      <div class="who mono">PENDING</div>
+      <div class="desc">客户提交工单，附截图 / 日志；主管与管理员即刻收到通知</div>
+    </div>
+    <div class="step" style="--c:#38bdf8">
+      <div class="st">处理中</div>
+      <div class="who mono">PROCESSING</div>
+      <div class="desc">研发认领或被分配；可转交，转交说明必填</div>
+    </div>
+    <div class="step" style="--c:#34d399">
+      <div class="st">已解决</div>
+      <div class="who mono">RESOLVED</div>
+      <div class="desc">处理完成，客户自动收到通知</div>
+    </div>
+    <div class="step" style="--c:#64748b">
+      <div class="st">已关闭</div>
+      <div class="who mono">CLOSED</div>
+      <div class="desc">客户「确认解决」闭环；未解决可退回，已关闭可重新打开</div>
+    </div>
+  </div>
+
+  <div class="sec">
+    <span class="no mono">02</span>
+    <h2>按角色看你能做什么</h2>
+  </div>
+  <div class="roles">
+    <div class="role">
+      <h3>客户（电力交易员）</h3>
+      <span class="scope">仅看自己创建的工单</span>
+      <ul>
+        <li>新建工单、上传附件</li>
+        <li>评论沟通、跟进度</li>
+        <li>确认解决 / 退回 / 重开</li>
+        <li>浏览、下载工具包</li>
+      </ul>
+    </div>
+    <div class="role">
+      <h3>研发</h3>
+      <span class="scope">我创建的 + 分配给我的</span>
+      <ul>
+        <li>看板掌握待办与统计</li>
+        <li>变更状态、转交工单</li>
+        <li>评论协作留痕</li>
+        <li>维护工具包与版本</li>
+      </ul>
+    </div>
+    <div class="role">
+      <h3>管理员 + 研发主管</h3>
+      <span class="scope">全部工单 + 后台管理</span>
+      <ul>
+        <li>分配处理人、跟进度</li>
+        <li>用户：建号 / 停用 / 角色</li>
+        <li>工单 / 用户批量删除</li>
+        <li>删除不可恢复，需谨慎</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="sec">
+    <span class="no mono">03</span>
+    <h2>通知别漏看</h2>
+  </div>
+  <div class="notice">
+    <div class="item">
+      <div class="t">站内铃铛</div>
+      <div class="d">未读数实时显示，点通知直达工单，可全部已读</div>
+    </div>
+    <div class="item">
+      <div class="t">桌面通知</div>
+      <div class="d">浏览器权限请选「允许」；弹窗常驻，点击跳转工单</div>
+    </div>
+    <div class="item">
+      <div class="t">HTTP 环境</div>
+      <div class="d">桌面通知不弹？按指南附录配置 chrome://flags，一次搞定</div>
+    </div>
+  </div>
+
+  <div class="foot">
+    <div class="slogan">问题不过夜，<span>闭环有回音</span></div>
+    <div class="doc">
+      完整图文指南见仓库 <b class="mono">docs/training.md</b><br>
+      账号 / 权限问题联系管理员
+    </div>
+  </div>
+
+</div>
+</body>
+</html>
