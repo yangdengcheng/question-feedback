@@ -201,7 +201,7 @@
       <el-form label-position="top">
         <el-form-item label="转交给">
           <el-select v-model="transferForm.toUserId" placeholder="选择转交人" filterable style="width: 100%">
-            <el-option v-for="u in internalUsers" :key="u.id"
+            <el-option v-for="u in transferCandidates" :key="u.id"
               :label="u.id === authStore.user?.id ? `${u.realName}（自己）` : `${u.realName}（${roleLabel(u.role)}）`"
               :value="u.id" />
           </el-select>
@@ -278,6 +278,14 @@ function openLogPreview(log, att) {
   logPreviewIndex.value = imgs.indexOf(att);
   logPreviewVisible.value = true;
 }
+
+// 转交候选人：处理人已是自己时排除自己（转给自己无意义），处理人是别人时可选自己
+const transferCandidates = computed(() => {
+  if (ticket.value?.assigneeId === authStore.user?.id) {
+    return internalUsers.value.filter(u => u.id !== authStore.user?.id);
+  }
+  return internalUsers.value;
+});
 
 const INTERNAL_ROLES = ["data_maintenance", "dev_lead", "developer", "tester", "admin"];
 const isInternal = computed(() => INTERNAL_ROLES.includes(authStore.user?.role));
