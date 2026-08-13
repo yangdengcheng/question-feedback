@@ -1,5 +1,5 @@
 <template>
-  <div class="max-w-4xl mx-auto">
+  <div class="max-w-6xl mx-auto">
     <div class="mb-6">
       <router-link to="/" class="text-sm text-ink-text-3 hover:text-ink-text-2 transition-colors">
         ← 返回工单列表
@@ -13,8 +13,10 @@
     </div>
 
     <template v-else-if="ticket">
+      <!-- 双栏布局：左侧工单正文+讨论，右侧流转记录（窄列不挤压正文） -->
+      <div class="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_20rem] xl:grid-cols-[minmax(0,1fr)_22rem] gap-6 items-start">
       <!-- 工单信息卡片 -->
-      <div class="panel panel-accent p-6 mb-6">
+      <div class="panel panel-accent p-6 lg:col-start-1 lg:row-start-1">
         <div class="flex items-start justify-between mb-4">
           <div>
             <div class="flex items-center gap-3 mb-2">
@@ -121,8 +123,9 @@
         </div>
       </div>
 
-      <!-- 工单流转记录 -->
-      <div v-if="ticket.logs && ticket.logs.length > 0" class="panel p-6 mb-6">
+      <!-- 工单流转记录（右栏，sticky + 内部滚动） -->
+      <div v-if="ticket.logs && ticket.logs.length > 0"
+        class="panel p-5 lg:col-start-2 lg:row-start-1 lg:row-span-2 lg:sticky lg:top-6 lg:max-h-[calc(100vh-3rem)] lg:overflow-y-auto">
         <h2 class="panel-title text-base font-semibold text-ink-text mb-4">流转记录</h2>
         <el-timeline>
           <el-timeline-item v-for="log in ticket.logs" :key="log.id" :timestamp="formatTime(log.createdAt)"
@@ -152,7 +155,7 @@
       </div>
 
       <!-- 讨论区 -->
-      <div class="panel p-6">
+      <div class="panel p-6 lg:col-start-1 lg:row-start-2">
         <h2 class="panel-title text-base font-semibold text-ink-text mb-6">
           讨论记录
           <span v-if="newCommentTip"
@@ -190,6 +193,7 @@
           </div>
         </div>
       </div>
+      </div>
     </template>
 
     <!-- 转工单对话框 -->
@@ -197,7 +201,8 @@
       <el-form label-position="top">
         <el-form-item label="转交给">
           <el-select v-model="transferForm.toUserId" placeholder="选择转交人" filterable style="width: 100%">
-            <el-option v-for="u in internalUsers" :key="u.id" :label="`${u.realName}（${roleLabel(u.role)}）`"
+            <el-option v-for="u in internalUsers" :key="u.id"
+              :label="u.id === authStore.user?.id ? `${u.realName}（自己）` : `${u.realName}（${roleLabel(u.role)}）`"
               :value="u.id" />
           </el-select>
         </el-form-item>
@@ -377,7 +382,8 @@ async function fetchComments() {
 async function fetchInternalUsers() {
   try {
     const users = await listAssignees();
-    internalUsers.value = users.filter(u => u.id !== authStore.user?.id);
+    // 不再排除自己：处理人是别人时也可以把工单转回给自己
+    internalUsers.value = users;
   } catch (e) { }
 }
 
