@@ -35,7 +35,9 @@ const shadow = computed(() => props.shadowColor || (isDark.value ? "white" : "bl
   line-height: 1.1;
 }
 
-/* 阴影层：复制一份文字，用 45° 斜纹渐变裁成文字形状，偏移到右下并流动 */
+/* 阴影层：复制一份文字，用 45° 斜纹渐变裁成文字形状，偏移到右下并流动
+   注意：参数为 em 相对单位，按导航栏字号（~20px）调过可见性；
+   若移到大字号场景需重新调参（偏移/条纹/速度都会随字号放大） */
 .line-shadow-text {
   position: relative;
   z-index: 0;
@@ -44,21 +46,21 @@ const shadow = computed(() => props.shadowColor || (isDark.value ? "white" : "bl
 .line-shadow-text::after {
   content: attr(data-text);
   position: absolute;
-  top: 0.04em;
-  left: 0.04em;
+  top: 0.12em;
+  left: 0.12em;
   z-index: -1;
   background: linear-gradient(
     45deg,
-    transparent 45%,
-    var(--shadow-color) 45%,
-    var(--shadow-color) 55%,
-    transparent 0
+    transparent 30%,
+    var(--shadow-color) 30%,
+    var(--shadow-color) 70%,
+    transparent 70%
   );
-  background-size: 0.06em 0.06em;
+  background-size: 0.25em 0.25em;
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
-  animation: line-shadow 15s linear infinite;
+  animation: line-shadow 4s linear infinite;
   pointer-events: none;
 }
 @keyframes line-shadow {
