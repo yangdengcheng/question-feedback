@@ -8,7 +8,7 @@
       >
         <div class="flex items-center gap-3">
           <img :src="logo" alt="林洋" class="h-8 w-auto object-contain" />
-          <span class="text-lg font-semibold text-ink-text">TradeMatrix</span>
+          <BrandTitle class="text-xl text-ink-text" />
         </div>
 
         <nav class="flex items-center gap-6">
@@ -124,6 +124,7 @@
 <script setup>
 import { onMounted, onUnmounted } from "vue";
 import logo from "../assets/logo.png";
+import BrandTitle from "../components/BrandTitle.vue";
 import { useRouter } from "vue-router";
 import { useAuthStore } from "../stores/auth";
 import { useNotificationStore } from "../stores/notification";
