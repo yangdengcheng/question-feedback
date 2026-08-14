@@ -50,7 +50,6 @@
             工具包
           </router-link>
           <router-link
-            v-if="authStore.isMaintainer"
             to="/workbench"
             class="text-sm transition-colors duration-200"
             :class="

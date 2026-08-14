@@ -9,6 +9,7 @@ CREATE TABLE IF NOT EXISTS workbenches (
   url         VARCHAR(255) NOT NULL COMMENT '服务地址，如 http://192.168.0.3:5180/',
   visit_count INT          NOT NULL DEFAULT 0 COMMENT '访问次数',
   version     INT          NOT NULL DEFAULT 0 COMMENT '乐观锁版本号',
+  roles       VARCHAR(255) NULL COMMENT '可见角色，逗号分隔；NULL/空=全员可见',
   created_by  INT          NOT NULL COMMENT '创建人',
   created_at DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,

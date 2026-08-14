@@ -14,7 +14,7 @@ const routes = [
       { path: "tickets/:id", name: "TicketDetail", component: () => import("../views/TicketDetail.vue") },
       { path: "toolkit", name: "ToolkitList", component: () => import("../views/ToolkitList.vue") },
       { path: "toolkit/:id", name: "ToolkitDetail", component: () => import("../views/ToolkitDetail.vue") },
-      { path: "workbench", name: "Workbench", component: () => import("../views/Workbench.vue"), meta: { requiresMaintainer: true } },
+      { path: "workbench", name: "Workbench", component: () => import("../views/Workbench.vue") },
       { path: "notifications", name: "Notifications", component: () => import("../views/Notifications.vue") },
     ],
   },
@@ -35,10 +35,8 @@ const router = createRouter({ history: createWebHistory(), routes });
 router.beforeEach((to, from, next) => {
   const token = localStorage.getItem("token");
   const user = JSON.parse(localStorage.getItem("user") || "null");
-  const MAINTAINER_ROLES = ["developer", "dev_lead", "admin"];
   if (to.meta.requiresAuth && !token) { next("/login"); return; }
   if (to.meta.requiresAdmin && !["admin", "dev_lead"].includes(user?.role)) { next("/"); return; }
-  if (to.meta.requiresMaintainer && !MAINTAINER_ROLES.includes(user?.role)) { next("/"); return; }
   if ((to.path === "/login" || to.path === "/register") && token) { next("/"); return; }
   next();
 });
