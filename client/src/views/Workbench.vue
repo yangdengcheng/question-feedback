@@ -157,7 +157,7 @@
         <el-form-item label="服务地址" required>
           <el-input
             v-model="form.url"
-            placeholder="如 http://192.168.0.3:5180/"
+            placeholder="如 http://127.0.0.1:8080"
             maxlength="255"
             clearable
             @keyup.enter="submit"
