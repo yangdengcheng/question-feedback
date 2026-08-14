@@ -1,5 +1,10 @@
-const { Op } = require("sequelize");
+const { Op, literal } = require("sequelize");
 const { Workbench, User } = require("../models");
+
+// LIKE 模糊匹配：转义 % _ 防止通配符注入
+function like(v) {
+  return { [Op.like]: `%${String(v).replace(/[%_]/g, "\\$&")}%` };
+}
 
 const PAGE_SIZE = 12; // 卡片布局：4 行 × 3 列
 
@@ -35,13 +40,59 @@ async function list(req, res, next) {
   try {
     const page = Math.max(1, parseInt(req.query.page) || 1);
     const pageSize = Math.min(48, Math.max(1, parseInt(req.query.pageSize) || PAGE_SIZE));
+    const where = {};
+    if (req.query.keyword) {
+      const k = like(req.query.keyword);
+      where[Op.or] = [{ name: k }, { url: k }];
+    }
     const { count, rows } = await Workbench.findAndCountAll({
+      where,
       include: [{ model: User, as: "creator", attributes: ["id", "realName"] }],
       order: [["createdAt", "DESC"], ["id", "DESC"]],
       limit: pageSize,
       offset: (page - 1) * pageSize,
     });
     res.json({ count, rows, page, pageSize });
+  } catch (error) {
+    next(error);
+  }
+}
+
+// 访问排行：按访问次数降序，只取前 10
+async function top(req, res, next) {
+  try {
+    const rows = await Workbench.findAll({
+      attributes: ["id", "name", "url", "visitCount"],
+      order: [["visitCount", "DESC"], ["id", "DESC"]],
+      limit: 10,
+    });
+    res.json(rows);
+  } catch (error) {
+    next(error);
+  }
+}
+
+// 访问计数 +1：version 乐观锁（CAS），冲突自动重试
+async function visit(req, res, next) {
+  try {
+    const id = req.params.id;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      const wb = await Workbench.findByPk(id, { attributes: ["id", "version"] });
+      if (!wb) return res.status(404).json({ message: "工作台不存在" });
+      const [affected] = await Workbench.update(
+        {
+          visitCount: literal("visit_count + 1"),
+          version: literal("version + 1"),
+        },
+        { where: { id, version: wb.version } },
+      );
+      if (affected > 0) {
+        const updated = await Workbench.findByPk(id, { attributes: ["id", "visitCount"] });
+        return res.json({ visitCount: updated.visitCount });
+      }
+      // affected === 0 说明 version 已被其他请求推进，重试
+    }
+    res.status(409).json({ message: "并发冲突，请稍后重试" });
   } catch (error) {
     next(error);
   }
@@ -104,4 +155,4 @@ async function remove(req, res, next) {
   }
 }
 
-module.exports = { list, create, update, remove };
+module.exports = { list, top, visit, create, update, remove };

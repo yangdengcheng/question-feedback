@@ -5,9 +5,11 @@
 
 CREATE TABLE IF NOT EXISTS workbenches (
   id         INT AUTO_INCREMENT PRIMARY KEY,
-  name       VARCHAR(100) NOT NULL COMMENT '工作台名称',
-  url        VARCHAR(255) NOT NULL COMMENT '服务地址，如 http://192.168.0.3:5180/',
-  created_by INT          NOT NULL COMMENT '创建人',
+  name        VARCHAR(100) NOT NULL COMMENT '工作台名称',
+  url         VARCHAR(255) NOT NULL COMMENT '服务地址，如 http://192.168.0.3:5180/',
+  visit_count INT          NOT NULL DEFAULT 0 COMMENT '访问次数',
+  version     INT          NOT NULL DEFAULT 0 COMMENT '乐观锁版本号',
+  created_by  INT          NOT NULL COMMENT '创建人',
   created_at DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   UNIQUE INDEX uk_url (url),

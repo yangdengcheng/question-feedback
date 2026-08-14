@@ -8,6 +8,8 @@ const ctrl = require("../controllers/workbenchController");
 router.use(auth, maintainerOnly);
 
 router.get("/", ctrl.list);
+router.get("/top", ctrl.top);
+router.post("/:id/visit", ctrl.visit);
 router.post("/", ctrl.create);
 router.put("/:id", ctrl.update);
 router.delete("/:id", ctrl.remove);
