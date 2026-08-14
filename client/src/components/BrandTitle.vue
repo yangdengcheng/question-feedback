@@ -46,8 +46,8 @@ const shadow = computed(() => props.shadowColor || (isDark.value ? "white" : "bl
 .line-shadow-text::after {
   content: attr(data-text);
   position: absolute;
-  top: 0.1em;
-  left: 0.1em;
+  top: 0.06em;
+  left: 0.06em;
   z-index: -1;
   background: linear-gradient(
     45deg,
