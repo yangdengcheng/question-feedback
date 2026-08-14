@@ -20,16 +20,22 @@
 
     <div v-else-if="notifications.length === 0" class="text-center py-20">
       <el-icon :size="48" class="text-ink-text-3 mb-4"><Bell /></el-icon>
-      <p class="text-ink-text-3">暂无未读通知</p>
+      <p class="text-ink-text-3">暂无通知</p>
     </div>
 
     <div v-else class="space-y-3">
       <div
         v-for="item in notifications"
         :key="item.id"
-        class="panel panel-hover p-4 cursor-pointer flex items-start gap-4"
+        class="panel panel-hover p-4 cursor-pointer flex items-start gap-4 relative"
+        :class="{ 'ring-1 ring-accent-border': !item.isRead }"
         @click="goTicket(item)"
       >
+        <span
+          v-if="!item.isRead"
+          class="absolute top-3 right-3 w-2 h-2 rounded-full bg-red-500"
+          aria-label="未读"
+        ></span>
         <div
           class="w-10 h-10 rounded-full flex items-center justify-center shrink-0"
           :class="iconBgClass(item.type)"
@@ -82,10 +88,10 @@ onMounted(() => {
 async function fetchNotifications() {
   loading.value = true;
   try {
+    // 拉取全部通知（含已读），已读后列表不消失，仅未读标记清除
     const data = await listNotifications({
       page: page.value,
       pageSize: pageSize.value,
-      unread: "true",
     });
     notifications.value = data.rows;
     total.value = data.count;
@@ -107,7 +113,17 @@ async function handleMarkAllRead() {
   }
 }
 
-function goTicket(item) {
+async function goTicket(item) {
+  // 点击查看即标记单条已读，同步刷新右上角未读角标
+  if (!item.isRead) {
+    try {
+      await markRead({ ids: [item.id] });
+      item.isRead = true;
+      notificationStore.fetchUnreadCount();
+    } catch (error) {
+      // 标记失败不阻断跳转
+    }
+  }
   if (item.ticketId) {
     router.push(`/tickets/${item.ticketId}`);
   }

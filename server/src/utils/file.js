@@ -1,6 +1,9 @@
 const fs = require("fs");
 const path = require("path");
 
+/** 上传文件统一存放目录（server/uploads） */
+const UPLOAD_DIR = path.join(__dirname, "..", "..", "uploads");
+
 /**
  * 修复文件名乱码：multer 按 latin1 解析 multipart 头，
  * UTF-8 中文文件名会存成含 Ã/Â 等字符的乱码串。
@@ -28,4 +31,23 @@ function removeFileQuiet(filePath) {
   }
 }
 
-module.exports = { repairFileName, removeFileQuiet };
+/**
+ * 解析附件磁盘路径。
+ * 历史数据存的是上传时的绝对路径，部署目录一旦搬迁文件就「消失」；
+ * 新数据只存文件名。这里先试原路径，再回退到当前 uploads 目录按文件名查找，
+ * 两种记录格式都能定位；文件确实不存在时返回 null。
+ */
+function resolveAttachmentPath(filePath) {
+  if (!filePath) return null;
+  const candidates = [path.resolve(filePath), path.join(UPLOAD_DIR, path.basename(filePath))];
+  for (const p of candidates) {
+    try {
+      if (fs.existsSync(p)) return p;
+    } catch (_) {
+      // 忽略单条候选路径的访问异常，继续尝试下一个
+    }
+  }
+  return null;
+}
+
+module.exports = { repairFileName, removeFileQuiet, resolveAttachmentPath, UPLOAD_DIR };

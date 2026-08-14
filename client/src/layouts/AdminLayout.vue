@@ -7,12 +7,8 @@
         class="max-w-full mx-auto px-6 h-16 flex items-center justify-between"
       >
         <div class="flex items-center gap-3">
-          <div
-            class="w-8 h-8 rounded-lg bg-primary text-[#1a1204] flex items-center justify-center"
-          >
-            <el-icon :size="18" color="#fff"><ChatDotRound /></el-icon>
-          </div>
-          <span class="text-lg font-semibold text-ink-text">问题反馈中心</span>
+          <img :src="logo" alt="林洋" class="h-8 w-auto object-contain" />
+          <BrandTitle class="text-xl text-ink-text" />
           <el-tag size="small" type="warning" class="ml-2">管理后台</el-tag>
         </div>
 
@@ -84,6 +80,8 @@
 
 <script setup>
 import { computed } from "vue";
+import logo from "../assets/logo.png";
+import BrandTitle from "../components/BrandTitle.vue";
 import { useRoute, useRouter } from "vue-router";
 import { useAuthStore } from "../stores/auth";
 import ThemeToggle from "../components/ThemeToggle.vue";

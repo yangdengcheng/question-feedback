@@ -2,12 +2,8 @@
   <div class="min-h-screen flex items-center justify-center px-4">
     <div class="w-full max-w-md">
       <div class="text-center mb-8">
-        <div
-          class="w-16 h-16 mx-auto mb-4 rounded-lg bg-primary text-[#1a1204] flex items-center justify-center"
-        >
-          <el-icon :size="32" color="#fff"><ChatDotRound /></el-icon>
-        </div>
-        <h1 class="text-2xl font-bold text-ink-text">问题反馈中心</h1>
+        <img :src="lyLogo" alt="林洋" class="h-16 w-auto mx-auto mb-4 object-contain" />
+        <h1 class="text-2xl text-ink-text"><BrandTitle /></h1>
         <p class="text-ink-text-3 mt-2 text-sm">登录您的账号</p>
       </div>
 
@@ -61,12 +57,16 @@
           </router-link>
         </div>
       </div>
+
+      <p class="mt-6 text-center text-xs text-ink-text-3">Copyright © 2026 林洋智维</p>
     </div>
   </div>
 </template>
 
 <script setup>
 import { ref, reactive } from "vue";
+import lyLogo from "../assets/lylogo.png";
+import BrandTitle from "../components/BrandTitle.vue";
 import { useRouter } from "vue-router";
 import { ElMessage } from "element-plus";
 import { useAuthStore } from "../stores/auth";

@@ -9,6 +9,7 @@ const attachmentRoutes = require("./routes/attachments");
 const notificationRoutes = require("./routes/notifications");
 const adminRoutes = require("./routes/admin");
 const toolkitRoutes = require("./routes/toolkit");
+const workbenchRoutes = require("./routes/workbench");
 
 const app = express();
 
@@ -26,6 +27,7 @@ app.use("/api", attachmentRoutes);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/toolkit", toolkitRoutes);
+app.use("/api/workbench", workbenchRoutes);
 
 app.use(errorHandler);
 

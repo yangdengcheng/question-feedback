@@ -2,7 +2,7 @@ const { sequelize, Ticket, User, Comment, Attachment, Notification, TicketLog, T
 const { Op } = require("sequelize");
 const { notifyAssigned, notifyStatusChange } = require("../services/notificationService");
 const { logAction } = require("../services/ticketLogService");
-const { removeFileQuiet } = require("../utils/file");
+const { removeFileQuiet, resolveAttachmentPath } = require("../utils/file");
 
 async function listTickets(req, res, next) {
   try {
@@ -81,7 +81,7 @@ async function destroyTickets(ids) {
     await t.rollback();
     throw error;
   }
-  attachments.forEach((a) => removeFileQuiet(a.filePath));
+  attachments.forEach((a) => { const p = resolveAttachmentPath(a.filePath); if (p) removeFileQuiet(p); });
   return ticketIds.length;
 }
 
@@ -194,7 +194,7 @@ async function destroyUsers(userIds, operatorId) {
     await t.rollback();
     throw error;
   }
-  attachments.forEach((a) => removeFileQuiet(a.filePath));
+  attachments.forEach((a) => { const p = resolveAttachmentPath(a.filePath); if (p) removeFileQuiet(p); });
   return ids.length;
 }
 
