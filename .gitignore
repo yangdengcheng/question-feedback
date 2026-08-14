@@ -12,3 +12,4 @@ docs/.chrome-tmp-profile/
 docs/.training-print.html
 docs/training-guide.pdf
 pandoc-*/
+.idea/

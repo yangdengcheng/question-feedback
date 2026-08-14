@@ -49,6 +49,18 @@
           >
             工具包
           </router-link>
+          <router-link
+            v-if="authStore.isMaintainer"
+            to="/workbench"
+            class="text-sm transition-colors duration-200"
+            :class="
+              $route.path === '/workbench'
+                ? 'text-accent-text'
+                : 'text-ink-text-2 hover:text-ink-text'
+            "
+          >
+            工作台
+          </router-link>
           <a
             v-if="authStore.isMaintainer"
             href="http://58.221.192.245:13888/"

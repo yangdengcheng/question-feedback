@@ -8,6 +8,7 @@ const TicketLog = require("./TicketLog");
 const ToolDict = require("./ToolDict");
 const ToolPackage = require("./ToolPackage");
 const ToolPackageVersion = require("./ToolPackageVersion");
+const Workbench = require("./Workbench");
 
 // User <-> Ticket (creator)
 User.hasMany(Ticket, { foreignKey: "userId", as: "tickets" });
@@ -72,7 +73,11 @@ ToolPackage.belongsTo(ToolPackageVersion, { foreignKey: "currentVersionId", as: 
 // ToolPackageVersion <-> User (creator)
 ToolPackageVersion.belongsTo(User, { foreignKey: "createdBy", as: "creator" });
 
+// Workbench <-> User (creator)
+User.hasMany(Workbench, { foreignKey: "createdBy", as: "workbenches" });
+Workbench.belongsTo(User, { foreignKey: "createdBy", as: "creator" });
+
 module.exports = {
   sequelize, User, Ticket, Comment, Attachment, Notification, TicketLog,
-  ToolDict, ToolPackage, ToolPackageVersion,
+  ToolDict, ToolPackage, ToolPackageVersion, Workbench,
 };
