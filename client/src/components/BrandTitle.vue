@@ -46,21 +46,21 @@ const shadow = computed(() => props.shadowColor || (isDark.value ? "white" : "bl
 .line-shadow-text::after {
   content: attr(data-text);
   position: absolute;
-  top: 0.12em;
-  left: 0.12em;
+  top: 0.1em;
+  left: 0.1em;
   z-index: -1;
   background: linear-gradient(
     45deg,
-    transparent 30%,
-    var(--shadow-color) 30%,
-    var(--shadow-color) 70%,
-    transparent 70%
+    transparent 35%,
+    var(--shadow-color) 35%,
+    var(--shadow-color) 65%,
+    transparent 65%
   );
-  background-size: 0.25em 0.25em;
+  background-size: 0.2em 0.2em;
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
-  animation: line-shadow 4s linear infinite;
+  animation: line-shadow 8s linear infinite;
   pointer-events: none;
 }
 @keyframes line-shadow {
