@@ -7,7 +7,7 @@
         class="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between"
       >
         <div class="flex items-center gap-3">
-          <img :src="lyLogo" alt="林洋" class="h-8 w-auto object-contain" />
+          <img :src="logo" alt="林洋" class="h-8 w-auto object-contain" />
           <span class="text-lg font-semibold text-ink-text">TradeMatrix</span>
         </div>
 
@@ -123,7 +123,7 @@
 
 <script setup>
 import { onMounted, onUnmounted } from "vue";
-import lyLogo from "../assets/lylogo.png";
+import logo from "../assets/logo.png";
 import { useRouter } from "vue-router";
 import { useAuthStore } from "../stores/auth";
 import { useNotificationStore } from "../stores/notification";
