@@ -38,7 +38,7 @@ export const useNotificationStore = defineStore("notification", () => {
 
   function showBrowserNotification(notification) {
     if (!("Notification" in window) || Notification.permission !== "granted") return;
-    const n = new Notification("问题反馈中心", {
+    const n = new Notification("TradeMatrix", {
       body: notification.content,
       icon: "/favicon.ico",
       tag: `ticket-${notification.ticketId}`,

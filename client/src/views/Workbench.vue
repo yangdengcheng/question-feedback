@@ -54,9 +54,6 @@
       <div v-else-if="items.length === 0" class="text-center py-20">
         <el-icon :size="48" class="text-ink-text-3 mb-4"><Grid /></el-icon>
         <p class="text-ink-text-3 mb-2">{{ keyword ? "没有匹配的工作台" : "暂无工作台" }}</p>
-        <p class="text-ink-text-3 text-sm">
-          {{ keyword ? "换个关键词试试" : "点击右上角「新增工作台」，添加第一个服务地址" }}
-        </p>
       </div>
 
       <!-- 卡片网格：一行三个 -->

@@ -7,12 +7,8 @@
         class="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between"
       >
         <div class="flex items-center gap-3">
-          <div
-            class="w-8 h-8 rounded-lg bg-primary text-[#1a1204] flex items-center justify-center"
-          >
-            <el-icon :size="18" color="#fff"><ChatDotRound /></el-icon>
-          </div>
-          <span class="text-lg font-semibold text-ink-text">问题反馈中心</span>
+          <img :src="lyLogo" alt="林洋" class="h-8 w-auto object-contain" />
+          <span class="text-lg font-semibold text-ink-text">TradeMatrix</span>
         </div>
 
         <nav class="flex items-center gap-6">
@@ -60,15 +56,6 @@
           >
             工作台
           </router-link>
-          <a
-            v-if="authStore.isMaintainer"
-            href="http://58.221.192.245:13888/"
-            target="_blank"
-            rel="noopener noreferrer"
-            class="text-sm text-ink-text-2 hover:text-ink-text transition-colors"
-          >
-            服务监控
-          </a>
           <router-link
             to="/notifications"
             class="text-sm transition-colors duration-200 relative"
@@ -136,6 +123,7 @@
 
 <script setup>
 import { onMounted, onUnmounted } from "vue";
+import lyLogo from "../assets/lylogo.png";
 import { useRouter } from "vue-router";
 import { useAuthStore } from "../stores/auth";
 import { useNotificationStore } from "../stores/notification";
