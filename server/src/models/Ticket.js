@@ -14,6 +14,7 @@ const Ticket = sequelize.define(
     type: { type: DataTypes.ENUM("bug", "question"), allowNull: false, defaultValue: "bug" },
     status: { type: DataTypes.ENUM("pending", "processing", "resolved", "closed"), allowNull: false, defaultValue: "pending" },
     priority: { type: DataTypes.ENUM("low", "medium", "high"), allowNull: false, defaultValue: "medium" },
+    isPublic: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: true, field: "is_public" },
     userId: { type: DataTypes.INTEGER, allowNull: false, field: "user_id" },
     assigneeId: { type: DataTypes.INTEGER, allowNull: true, field: "assignee_id" },
   },

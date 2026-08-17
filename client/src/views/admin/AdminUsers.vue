@@ -34,10 +34,10 @@
             <el-tag :type="row.isActive ? 'success' : 'danger'" size="small">{{ row.isActive ? "启用" : "禁用" }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="最后登录时间" width="150" align="center">
+        <el-table-column label="最后登录时间" width="170" align="center">
           <template #default="{ row }">{{ formatTime(row.lastActiveAt) || "-" }}</template>
         </el-table-column>
-        <el-table-column label="注册时间" width="150" align="center">
+        <el-table-column label="注册时间" width="170" align="center">
           <template #default="{ row }">{{ formatTime(row.createdAt) }}</template>
         </el-table-column>
         <el-table-column label="在线" width="80" align="center">
@@ -306,7 +306,7 @@ const nameHeaderLabel = computed(() => {
 const shanghaiFmt = new Intl.DateTimeFormat("en-CA", {
   timeZone: "Asia/Shanghai",
   year: "numeric", month: "2-digit", day: "2-digit",
-  hour: "2-digit", minute: "2-digit", hourCycle: "h23",
+  hour: "2-digit", minute: "2-digit", second: "2-digit", hourCycle: "h23",
 });
 
 function formatTime(time) {
@@ -314,6 +314,6 @@ function formatTime(time) {
   const d = new Date(time);
   if (Number.isNaN(d.getTime())) return "";
   const p = Object.fromEntries(shanghaiFmt.formatToParts(d).map(({ type, value }) => [type, value]));
-  return `${p.year}/${p.month}/${p.day} ${p.hour}:${p.minute}`;
+  return `${p.year}/${p.month}/${p.day} ${p.hour}:${p.minute}:${p.second}`;
 }
 </script>

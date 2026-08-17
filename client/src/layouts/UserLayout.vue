@@ -1,7 +1,7 @@
 <template>
   <div class="min-h-screen flex flex-col">
     <header
-      class="panel border-b border-line rounded-none"
+      class="panel border-b border-line rounded-none sticky top-0 z-50"
     >
       <div
         class="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between"

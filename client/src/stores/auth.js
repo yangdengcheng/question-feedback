@@ -33,6 +33,20 @@ export const useAuthStore = defineStore("auth", () => {
   }
 
   function logout() {
+    // 清 token 之前先通知服务器下线（后端把 lastActiveAt 置 null → 用户管理立即显示离线）
+    // fire-and-forget：keepalive 保证页面跳转/关闭时请求也能发出
+    const t = token.value;
+    if (t) {
+      try {
+        fetch("/api/auth/offline", {
+          method: "POST",
+          keepalive: true,
+          headers: { Authorization: `Bearer ${t}` },
+        }).catch(() => {});
+      } catch (_) {
+        /* 忽略：退出时的尽力而为请求 */
+      }
+    }
     token.value = "";
     user.value = null;
     localStorage.removeItem("token");
