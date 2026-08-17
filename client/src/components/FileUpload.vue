@@ -73,7 +73,21 @@ let globalListenerAttached = false;
 
 function globalPasteListener(event) {
   const tag = event.target?.tagName?.toLowerCase();
-  if (tag === "input" || tag === "textarea") return;
+  const inTextField = tag === "input" || tag === "textarea";
+  if (inTextField) {
+    // 焦点在输入框内：先探测剪贴板内容——含图片（截图）才接管，
+    // 纯文本粘贴不拦截，保持浏览器默认插入行为
+    const items = event.clipboardData?.items;
+    if (!items) return;
+    let hasImage = false;
+    for (const item of items) {
+      if (item.type.startsWith("image/")) {
+        hasImage = true;
+        break;
+      }
+    }
+    if (!hasImage) return;
+  }
   const handlers = [...pasteHandlers];
   if (handlers.length > 0) {
     handlers[handlers.length - 1](event);
