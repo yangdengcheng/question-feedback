@@ -1,4 +1,4 @@
-const { Ticket, User, Attachment, TicketLog } = require("../models");
+const { sequelize, Ticket, User, Attachment, TicketLog } = require("../models");
 const { Op, fn, col } = require("sequelize");
 const { generateTicketNo } = require("../services/ticketService");
 const { notifyNewTicket, notifyStatusChange, notifyAssigned } = require("../services/notificationService");
@@ -67,7 +67,12 @@ async function list(req, res, next) {
         { model: User, as: "creator", attributes: ["id", "username", "realName"] },
         { model: User, as: "assignee", attributes: ["id", "username", "realName"] },
       ],
-      order: [["updatedAt", "DESC"]],
+      // 排序：状态（待处理→处理中→已解决→已关闭）→ 优先级（高→中→低）→ 创建时间降序
+      order: [
+        [sequelize.literal("FIELD(status, 'pending', 'processing', 'resolved', 'closed')"), "ASC"],
+        [sequelize.literal("FIELD(priority, 'high', 'medium', 'low')"), "ASC"],
+        ["createdAt", "DESC"],
+      ],
       limit: parseInt(pageSize, 10),
       offset,
     });
