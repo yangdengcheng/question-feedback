@@ -26,6 +26,7 @@ CREATE TABLE IF NOT EXISTS tickets (
   type        ENUM('bug','question') NOT NULL DEFAULT 'bug' COMMENT '类型',
   status      ENUM('pending','processing','resolved','closed') NOT NULL DEFAULT 'pending' COMMENT '状态',
   priority    ENUM('low','medium','high') NOT NULL DEFAULT 'medium' COMMENT '优先级',
+  is_public   TINYINT(1)   NOT NULL DEFAULT 1 COMMENT '是否公开：1公开（所有人可见） 0非公开（仅创建人和处理人可见）',
   user_id     INT          NOT NULL COMMENT '创建人',
   assignee_id INT          NULL COMMENT '处理人',
   created_at  DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,

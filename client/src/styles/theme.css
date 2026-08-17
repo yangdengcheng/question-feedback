@@ -590,6 +590,18 @@ input:-internal-autofill-selected {
   background: var(--surface-2) !important;
   border: 1px solid var(--line-strong) !important;
 }
+/* 提示气泡跟随主主题：上面的全局 .el-popper 覆盖只换了背景，
+   EP dark effect 的白字会隐形、箭头残留深色变成黑菱形；
+   这里把文字与箭头也统一到主题变量 → 主题 dark 则气泡 dark，light 则 light */
+.el-popper.is-dark,
+.el-popper.is-light {
+  color: var(--text) !important;
+}
+.el-popper.is-dark .el-popper__arrow::before,
+.el-popper.is-light .el-popper__arrow::before {
+  background: var(--surface-2) !important;
+  border-color: var(--line-strong) !important;
+}
 .el-select-dropdown__item {
   color: var(--text-2);
 }

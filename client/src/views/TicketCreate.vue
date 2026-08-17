@@ -19,13 +19,36 @@
         @submit.prevent="handleSubmit"
       >
         <el-form-item label="标题" prop="title">
-          <el-input
-            v-model="form.title"
-            placeholder="简要描述您遇到的问题"
-            maxlength="200"
-            show-word-limit
-            size="large"
-          />
+          <div class="flex items-center gap-4 w-full">
+            <el-input
+              v-model="form.title"
+              placeholder="简要描述您遇到的问题"
+              maxlength="200"
+              show-word-limit
+              size="large"
+              class="flex-1"
+            />
+            <div class="flex items-center gap-2 shrink-0">
+              <span
+                class="text-sm transition-colors"
+                :class="form.isPublic ? 'text-ink-text-3' : 'font-semibold text-[#F56C6C]'"
+              >非公开</span>
+              <el-tooltip
+                :content="form.isPublic ? '此工单所有人可见' : '仅工单创建人和处理人可见'"
+                placement="top"
+              >
+                <el-switch
+                  v-model="form.isPublic"
+                  active-color="#67C23A"
+                  inactive-color="#F56C6C"
+                />
+              </el-tooltip>
+              <span
+                class="text-sm transition-colors"
+                :class="form.isPublic ? 'font-semibold text-[#67C23A]' : 'text-ink-text-3'"
+              >公开</span>
+            </div>
+          </div>
         </el-form-item>
 
         <el-form-item label="类型" prop="type">
@@ -87,6 +110,7 @@ const form = reactive({
   type: "bug",
   priority: "medium",
   description: "",
+  isPublic: true, // 滑块开关：false=非公开 true=公开（默认）
 });
 
 const rules = {
@@ -102,8 +126,10 @@ async function handleSubmit() {
   try {
     // Upload files first (if any), then create ticket
     const attachmentIds = fileUploadRef.value ? await fileUploadRef.value.uploadAll() : [];
+    const { isPublic, ...rest } = form;
     const data = await createTicket({
-      ...form,
+      ...rest,
+      isPublic: isPublic,
       attachmentIds,
     });
     ElMessage.success(`工单 ${data.ticketNo} 创建成功`);

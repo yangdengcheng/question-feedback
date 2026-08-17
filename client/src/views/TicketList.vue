@@ -1,7 +1,7 @@
 <template>
   <div>
     <div class="flex items-center justify-between mb-6">
-      <h1 class="text-xl font-bold text-ink-text">我的工单</h1>
+      <h1 class="text-xl font-bold text-ink-text">工单列表</h1>
       <router-link to="/tickets/new">
         <button class="btn-accent">
           <el-icon class="mr-1"><Plus /></el-icon>新建工单

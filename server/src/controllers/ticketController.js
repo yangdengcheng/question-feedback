@@ -7,17 +7,15 @@ const { logAction } = require("../services/ticketLogService");
 const INTERNAL_ROLES = ["data_maintenance", "dev_lead", "developer", "tester", "admin"];
 
 // 用户可见的工单数据范围（列表与看板统计共用，保证口径一致）：
-// admin/dev_lead 看全部；其他内部角色看「我创建的 + 分配给我的」；客户看「我创建的」
+// admin/dev_lead 看全部；其他用户看「我创建的 + 分配给我的 + 公开的」
 function visibleWhere(user) {
-  const isInternal = INTERNAL_ROLES.includes(user.role);
-  if (isInternal && (user.role === "admin" || user.role === "dev_lead")) return {};
-  if (isInternal) return { [Op.or]: [{ userId: user.id }, { assigneeId: user.id }] };
-  return { userId: user.id };
+  if (user.role === "admin" || user.role === "dev_lead") return {};
+  return { [Op.or]: [{ userId: user.id }, { assigneeId: user.id }, { isPublic: true }] };
 }
 
 async function create(req, res, next) {
   try {
-    const { title, description, type, priority, attachmentIds } = req.body;
+    const { title, description, type, priority, attachmentIds, isPublic } = req.body;
     if (!title) {
       return res.status(400).json({ message: "标题不能为空" });
     }
@@ -27,6 +25,7 @@ async function create(req, res, next) {
       description: description || null,
       type: type || "bug",
       priority: priority || "medium",
+      isPublic: isPublic === undefined ? true : !!isPublic,
       userId: req.user.id,
     });
     if (attachmentIds && attachmentIds.length > 0) {
@@ -100,8 +99,14 @@ async function detail(req, res, next) {
       ],
     });
     if (!ticket) return res.status(404).json({ message: "工单不存在" });
-    const INTERNAL_ROLES = ["data_maintenance", "dev_lead", "developer", "tester", "admin"];
-    if (!INTERNAL_ROLES.includes(req.user.role) && ticket.userId !== req.user.id) {
+    // 可见口径与列表一致：admin/dev_lead 看全部；其他用户限 我创建的/分配给我的/公开的
+    const canView =
+      req.user.role === "admin" ||
+      req.user.role === "dev_lead" ||
+      ticket.userId === req.user.id ||
+      ticket.assigneeId === req.user.id ||
+      !!ticket.isPublic;
+    if (!canView) {
       return res.status(403).json({ message: "无权查看此工单" });
     }
     res.json(ticket);
@@ -127,9 +132,9 @@ async function updateStatus(req, res, next) {
       const allowed = allowedTransitions[ticket.status];
       if (!allowed || !allowed.includes(status)) return res.status(403).json({ message: "不允许的状态变更" });
     } else {
-      // Internal: must be assignee, creator, or admin/dev_lead
-      if (req.user.role !== "admin" && req.user.role !== "dev_lead" && ticket.assigneeId !== req.user.id && ticket.userId !== req.user.id) {
-        return res.status(403).json({ message: "无权操作此工单" });
+      // 内部：仅处理人或管理员（admin/dev_lead）可变更状态
+      if (req.user.role !== "admin" && req.user.role !== "dev_lead" && ticket.assigneeId !== req.user.id) {
+        return res.status(403).json({ message: "仅处理人或管理员可变更状态" });
       }
     }
 
@@ -163,6 +168,10 @@ async function transfer(req, res, next) {
     const INTERNAL_ROLES = ["data_maintenance", "dev_lead", "developer", "tester", "admin"];
     if (!INTERNAL_ROLES.includes(req.user.role)) {
       return res.status(403).json({ message: "仅内部人员可转工单" });
+    }
+    // 仅处理人或管理员（admin/dev_lead）可转工单
+    if (req.user.role !== "admin" && req.user.role !== "dev_lead" && ticket.assigneeId !== req.user.id) {
+      return res.status(403).json({ message: "仅处理人或管理员可转工单" });
     }
 
     const targetUser = await User.findByPk(toUserId);

@@ -5,6 +5,11 @@
         <span class="text-xs text-ink-text-3 font-mono tnum">{{
           ticket.ticketNo
         }}</span>
+        <el-tag
+          size="small"
+          effect="light"
+          :type="ticket.isPublic ? 'success' : 'danger'"
+        >{{ ticket.isPublic ? "公开" : "非公开" }}</el-tag>
         <el-tag size="small" effect="plain" :type="typeTagType">{{
           typeLabel
         }}</el-tag>
@@ -21,6 +26,9 @@
         <span>
           <el-icon class="mr-1"><Flag /></el-icon>
           {{ priorityLabel }}
+        </span>
+        <span v-if="ticket.creator">
+          提交人：{{ ticket.creator.realName }}
         </span>
         <span v-if="ticket.assignee">
           处理人：{{ ticket.assignee.realName }}

@@ -21,6 +21,7 @@
           <div>
             <div class="flex items-center gap-3 mb-2">
               <span class="text-xs text-ink-text-3 tnum">{{ ticket.ticketNo }}</span>
+              <el-tag size="small" effect="light" :type="ticket.isPublic ? 'success' : 'danger'">{{ ticket.isPublic ? "公开" : "非公开" }}</el-tag>
               <el-tag size="small" effect="plain" :type="typeTagType">{{ typeLabel }}</el-tag>
               <StatusBadge :status="ticket.status" />
             </div>
@@ -85,31 +86,39 @@
             </el-button>
           </template>
 
-          <!-- 内部角色：状态变更 -->
+          <!-- 内部角色：状态变更/转工单（仅处理人或管理员可操作，其余悬浮提示禁止） -->
           <template v-if="isInternal">
-            <el-dropdown trigger="click" @command="handleStatusChange">
-              <el-button type="primary" plain>
-                {{ ticket.status === 'closed' ? '重新打开' : '变更状态' }}<el-icon class="ml-1">
-                  <ArrowDown />
-                </el-icon>
-              </el-button>
-              <template #dropdown>
-                <el-dropdown-menu>
-                  <el-dropdown-item command="pending" :disabled="ticket.status === 'pending'">待处理</el-dropdown-item>
-                  <el-dropdown-item command="processing"
-                    :disabled="ticket.status === 'processing'">处理中</el-dropdown-item>
-                  <el-dropdown-item command="resolved" :disabled="ticket.status === 'resolved'">已解决</el-dropdown-item>
-                  <el-dropdown-item command="closed" :disabled="ticket.status === 'closed'">已关闭</el-dropdown-item>
-                </el-dropdown-menu>
-              </template>
-            </el-dropdown>
+            <el-tooltip :disabled="canOperate" content="仅处理人或管理员可变更状态" placement="top">
+              <span>
+                <el-dropdown trigger="click" :disabled="!canOperate" @command="handleStatusChange">
+                  <el-button type="primary" plain :disabled="!canOperate">
+                    {{ ticket.status === 'closed' ? '重新打开' : '变更状态' }}<el-icon class="ml-1">
+                      <ArrowDown />
+                    </el-icon>
+                  </el-button>
+                  <template #dropdown>
+                    <el-dropdown-menu>
+                      <el-dropdown-item command="pending" :disabled="ticket.status === 'pending'">待处理</el-dropdown-item>
+                      <el-dropdown-item command="processing"
+                        :disabled="ticket.status === 'processing'">处理中</el-dropdown-item>
+                      <el-dropdown-item command="resolved" :disabled="ticket.status === 'resolved'">已解决</el-dropdown-item>
+                      <el-dropdown-item command="closed" :disabled="ticket.status === 'closed'">已关闭</el-dropdown-item>
+                    </el-dropdown-menu>
+                  </template>
+                </el-dropdown>
+              </span>
+            </el-tooltip>
 
             <!-- 转工单按钮 -->
-            <el-button type="warning" plain @click="showTransferDialog = true">
-              <el-icon class="mr-1">
-                <Sort />
-              </el-icon>转工单
-            </el-button>
+            <el-tooltip :disabled="canOperate" content="仅处理人或管理员可转工单" placement="top">
+              <span>
+                <el-button type="warning" plain :disabled="!canOperate" @click="showTransferDialog = true">
+                  <el-icon class="mr-1">
+                    <Sort />
+                  </el-icon>转工单
+                </el-button>
+              </span>
+            </el-tooltip>
           </template>
 
           <!-- 客户：已关闭工单可重新打开 -->
@@ -125,7 +134,7 @@
 
       <!-- 工单流转记录（右栏，sticky + 内部滚动） -->
       <div v-if="ticket.logs && ticket.logs.length > 0"
-        class="panel p-5 lg:col-start-2 lg:row-start-1 lg:row-span-2 lg:sticky lg:top-6 lg:max-h-[calc(100vh-3rem)] lg:overflow-y-auto">
+        class="panel p-5 lg:col-start-2 lg:row-start-1 lg:row-span-2 lg:sticky lg:top-[4.75rem] lg:max-h-[calc(100vh-6rem)] lg:overflow-y-auto">
         <h2 class="panel-title text-base font-semibold text-ink-text mb-4">流转记录</h2>
         <el-timeline>
           <el-timeline-item v-for="log in ticket.logs" :key="log.id" :timestamp="formatTime(log.createdAt)"
@@ -289,6 +298,10 @@ const transferCandidates = computed(() => {
 
 const INTERNAL_ROLES = ["data_maintenance", "dev_lead", "developer", "tester", "admin"];
 const isInternal = computed(() => INTERNAL_ROLES.includes(authStore.user?.role));
+// 操作权：仅处理人或管理员（admin/dev_lead），公开工单的非相关内部人员只读
+const canOperate = computed(
+  () => ["admin", "dev_lead"].includes(authStore.user?.role) || ticket.value?.assigneeId === authStore.user?.id,
+);
 
 const roleMap = {
   customer: "客户",
