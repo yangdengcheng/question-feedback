@@ -34,6 +34,7 @@ CREATE TABLE IF NOT EXISTS tickets (
   INDEX idx_status (status),
   INDEX idx_user_id (user_id),
   INDEX idx_assignee_id (assignee_id),
+  FULLTEXT KEY ft_tickets_title (title) WITH PARSER ngram,
   CONSTRAINT fk_tickets_user FOREIGN KEY (user_id) REFERENCES users(id),
   CONSTRAINT fk_tickets_assignee FOREIGN KEY (assignee_id) REFERENCES users(id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='工单表';
@@ -89,7 +90,7 @@ CREATE TABLE IF NOT EXISTS ticket_logs (
   id               INT AUTO_INCREMENT PRIMARY KEY,
   ticket_id        INT          NOT NULL COMMENT '关联工单',
   user_id          INT          NOT NULL COMMENT '操作人',
-  action           ENUM('created','assigned','transferred','status_changed','commented') NOT NULL COMMENT '操作类型',
+  action           ENUM('created','assigned','transferred','status_changed','commented','reopened') NOT NULL COMMENT '操作类型',
   from_status      VARCHAR(20)  NULL COMMENT '原状态',
   to_status        VARCHAR(20)  NULL COMMENT '新状态',
   from_assignee_id INT          NULL COMMENT '原处理人',

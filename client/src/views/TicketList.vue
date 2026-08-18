@@ -9,7 +9,7 @@
       </router-link>
     </div>
 
-    <div class="panel p-4 mb-6 flex items-center gap-4 flex-wrap">
+    <div class="panel p-4 mb-6 flex items-center gap-4 flex-wrap sticky top-16 z-40">
       <el-input v-model="keyword" placeholder="搜索工单标题..." clearable class="w-64" @input="handleSearch" @clear="handleSearch">
         <template #prefix><el-icon><Search /></el-icon></template>
       </el-input>

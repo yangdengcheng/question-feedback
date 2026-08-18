@@ -1,0 +1,491 @@
+<template>
+  <div>
+    <div v-if="loading" class="flex justify-center py-20">
+      <el-icon class="is-loading text-accent-text" :size="32">
+        <Loading />
+      </el-icon>
+    </div>
+
+    <template v-else-if="ticket">
+      <!-- 双栏布局：左侧工单正文+讨论，右侧流转记录（窄列不挤压正文） -->
+      <div class="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_20rem] xl:grid-cols-[minmax(0,1fr)_22rem] gap-6 items-start">
+      <!-- 工单信息卡片 -->
+      <div class="panel panel-accent p-6 lg:col-start-1 lg:row-start-1">
+        <div class="flex items-start justify-between mb-4">
+          <div>
+            <div class="flex items-center gap-3 mb-2">
+              <span class="text-xs text-ink-text-3 tnum">{{ ticket.ticketNo }}</span>
+              <el-tag size="small" effect="light" :type="ticket.isPublic ? 'success' : 'danger'">{{ ticket.isPublic ? "公开" : "非公开" }}</el-tag>
+              <el-tag size="small" effect="plain" :type="typeTagType">{{ typeLabel }}</el-tag>
+              <StatusBadge :status="ticket.status" />
+            </div>
+            <h1 class="text-lg font-bold text-ink-text">{{ ticket.title }}</h1>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+          <div>
+            <span class="text-ink-text-3">优先级</span>
+            <p class="text-ink-text mt-1">{{ priorityLabel }}</p>
+          </div>
+          <div>
+            <span class="text-ink-text-3">提交人</span>
+            <p class="text-ink-text mt-1">{{ ticket.creator?.realName }}</p>
+          </div>
+          <div>
+            <span class="text-ink-text-3">处理人</span>
+            <p class="text-ink-text mt-1">{{ ticket.assignee?.realName || "未分配" }}</p>
+          </div>
+          <div>
+            <span class="text-ink-text-3">创建时间</span>
+            <p class="text-ink-text mt-1 tnum">{{ formatTime(ticket.createdAt) }}</p>
+          </div>
+        </div>
+
+        <div v-if="ticket.description" class="mt-4 pt-4 border-t border-line">
+          <p class="text-sm text-ink-text-2 whitespace-pre-wrap">{{ ticket.description }}</p>
+        </div>
+
+        <div v-if="ticket.attachments && ticket.attachments.length > 0" class="mt-4 pt-4 border-t border-line">
+          <span class="text-sm text-ink-text-3 mb-2 block">附件</span>
+          <div class="flex flex-wrap gap-3">
+            <template v-for="att in ticket.attachments" :key="att.id">
+              <img v-if="att.fileType.startsWith('image/')" :src="`/api/attachments/${att.id}`"
+                class="w-20 h-20 rounded-lg object-cover cursor-pointer hover:opacity-80 transition-opacity"
+                @click="openAttachmentPreview(ticket.attachments.filter(a => a.fileType.startsWith('image/')).indexOf(att))" />
+              <a v-else :href="`/api/attachments/${att.id}`" target="_blank"
+                class="flex items-center gap-2 text-xs text-accent-text hover:text-[#fcd34d] panel px-3 py-2 rounded-lg transition-colors">
+                <el-icon>
+                  <Document />
+                </el-icon>
+                {{ att.fileName }}
+              </a>
+            </template>
+          </div>
+        </div>
+
+        <!-- 操作按钮区 -->
+        <div class="mt-4 pt-4 border-t border-line flex flex-wrap gap-3">
+          <!-- 客户：确认解决 / 继续讨论 -->
+          <template v-if="!isInternal && ticket.status === 'resolved' && ticket.userId === authStore.user?.id">
+            <el-button type="success" @click="handleStatusChange('closed')">
+              <el-icon class="mr-1">
+                <Check />
+              </el-icon>确认解决
+            </el-button>
+            <el-button type="warning" @click="handleStatusChange('processing')">
+              <el-icon class="mr-1">
+                <RefreshRight />
+              </el-icon>未解决，继续讨论
+            </el-button>
+          </template>
+
+          <!-- 内部角色：状态变更/转工单（仅未关闭时；已关闭统一走重新打开） -->
+          <template v-if="isInternal && ticket.status !== 'closed'">
+            <el-tooltip :disabled="canOperate" content="仅处理人或管理员可变更状态" placement="top">
+              <span>
+                <el-dropdown trigger="click" :disabled="!canOperate" @command="handleStatusChange">
+                  <el-button type="primary" plain :disabled="!canOperate">
+                    变更状态<el-icon class="ml-1">
+                      <ArrowDown />
+                    </el-icon>
+                  </el-button>
+                  <template #dropdown>
+                    <el-dropdown-menu>
+                      <el-dropdown-item command="pending" :disabled="ticket.status === 'pending'">待处理</el-dropdown-item>
+                      <el-dropdown-item command="processing"
+                        :disabled="ticket.status === 'processing'">处理中</el-dropdown-item>
+                      <el-dropdown-item command="resolved" :disabled="ticket.status === 'resolved'">已解决</el-dropdown-item>
+                      <el-dropdown-item command="closed" :disabled="ticket.status === 'closed'">已关闭</el-dropdown-item>
+                    </el-dropdown-menu>
+                  </template>
+                </el-dropdown>
+              </span>
+            </el-tooltip>
+
+            <!-- 转工单按钮 -->
+            <el-tooltip :disabled="canOperate" content="仅处理人或管理员可转工单" placement="top">
+              <span>
+                <el-button type="warning" plain :disabled="!canOperate" @click="openActionDialog('transfer')">
+                  <el-icon class="mr-1">
+                    <Sort />
+                  </el-icon>转工单
+                </el-button>
+              </span>
+            </el-tooltip>
+          </template>
+
+          <!-- 任何人：重新打开已关闭的工单 -->
+          <template v-if="ticket.status === 'closed'">
+            <el-button type="primary" @click="openActionDialog('reopen')">
+              <el-icon class="mr-1">
+                <RefreshRight />
+              </el-icon>重新打开
+            </el-button>
+          </template>
+        </div>
+      </div>
+
+      <!-- 工单流转记录（右栏，sticky + 内部滚动） -->
+      <div v-if="ticket.logs && ticket.logs.length > 0"
+        class="panel p-5 lg:col-start-2 lg:row-start-1 lg:row-span-2 lg:sticky lg:top-[4.75rem] lg:max-h-[calc(100vh-6rem)] lg:overflow-y-auto">
+        <h2 class="panel-title text-base font-semibold text-ink-text mb-4">流转记录</h2>
+        <el-timeline>
+          <el-timeline-item v-for="log in ticket.logs" :key="log.id" :timestamp="formatTime(log.createdAt)"
+            placement="top" :type="logActionColor(log.action)">
+            <div class="text-sm text-ink-text">
+              <span class="text-accent-text font-medium">{{ log.operator?.realName }}</span>
+              {{ logActionText(log) }}
+            </div>
+            <div v-if="log.content" class="text-xs text-ink-text-3 mt-1 pl-1 border-l-2 border-accent-border ml-0.5">
+              {{ log.content }}
+            </div>
+            <div v-if="log.attachments && log.attachments.length > 0" class="mt-2 flex flex-wrap gap-2">
+              <template v-for="att in log.attachments" :key="att.id">
+                <img v-if="att.fileType.startsWith('image/')" :src="`/api/attachments/${att.id}`"
+                  class="w-16 h-16 rounded-lg object-cover cursor-pointer hover:opacity-80 transition-opacity"
+                  @click="openLogPreview(log, att)" />
+                <a v-else :href="`/api/attachments/${att.id}`" target="_blank"
+                  class="flex items-center gap-1 text-xs text-accent-text hover:text-[#fcd34d] panel px-2 py-1 rounded-lg transition-colors">
+                  <el-icon>
+                    <Document />
+                  </el-icon>{{ att.fileName }}
+                </a>
+              </template>
+            </div>
+          </el-timeline-item>
+        </el-timeline>
+      </div>
+
+      <!-- 讨论区 -->
+      <div class="panel p-6 lg:col-start-1 lg:row-start-2">
+        <h2 class="panel-title text-base font-semibold text-ink-text mb-6">
+          讨论记录
+          <span v-if="newCommentTip"
+            class="ml-2 align-middle inline-flex items-center gap-1 text-xs font-medium text-accent-text">
+            <i class="w-1.5 h-1.5 rounded-full bg-primary pulse-dot" />有新评论
+          </span>
+        </h2>
+
+        <div v-if="comments.length === 0" class="flex flex-col items-center justify-center py-12 text-center">
+          <div
+            class="w-14 h-14 rounded-full border border-dashed border-line-strong flex items-center justify-center bg-ink/40">
+            <el-icon :size="26" class="text-ink-text-3"><ChatDotRound /></el-icon>
+          </div>
+          <p class="text-sm text-ink-text-2 mt-4">暂无讨论</p>
+          <p class="text-xs text-ink-text-3 mt-1">在下方发表第一条评论，开启对话</p>
+        </div>
+
+        <div v-else class="space-y-6">
+          <CommentItem v-for="comment in comments" :key="comment.id" :comment="comment" />
+        </div>
+
+        <!-- 评论撰写器 -->
+        <div class="mt-8 pt-6 border-t border-line">
+          <el-input v-model="newComment" type="textarea" :rows="3" placeholder="输入您的评论，支持 Ctrl+V 粘贴截图…" />
+          <div class="flex items-start justify-between gap-3 mt-3">
+            <div class="flex items-center gap-3 min-w-0">
+              <FileUpload compact ref="commentFileUploadRef" />
+              <span class="text-xs text-ink-text-3 hidden sm:inline">可拖拽 / 粘贴图片</span>
+            </div>
+            <button class="btn-accent shrink-0" :disabled="!newComment.trim() || submitting" @click="submitComment">
+              <el-icon v-if="!submitting"><Promotion /></el-icon>
+              <el-icon v-else class="is-loading"><Loading /></el-icon>
+              {{ submitting ? "发送中" : "发送" }}
+            </button>
+          </div>
+        </div>
+      </div>
+      </div>
+    </template>
+
+    <!-- 转工单 / 重新打开 共用对话框：标题动态、reopen 模式隐藏转交人 -->
+    <el-dialog v-model="showActionDialog" :title="actionMode === 'transfer' ? '转工单' : '重新打开工单'" width="480px">
+      <el-form label-position="top">
+        <el-form-item v-if="actionMode === 'transfer'" label="转交给">
+          <el-select v-model="actionForm.toUserId" placeholder="选择转交人" filterable style="width: 100%">
+            <el-option v-for="u in transferCandidates" :key="u.id"
+              :label="u.id === authStore.user?.id ? `${u.realName}（自己）` : `${u.realName}（${roleLabel(u.role)}）`"
+              :value="u.id" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="相关说明（必填）">
+          <el-input v-model="actionForm.content" type="textarea" :rows="3"
+            :placeholder="actionMode === 'transfer' ? '请说明转交原因...' : '请说明重新打开原因...'" />
+        </el-form-item>
+        <el-form-item label="附件（可选）">
+          <FileUpload ref="actionFileUploadRef" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="showActionDialog = false">取消</el-button>
+        <el-button type="primary" :loading="actionSubmitting" @click="handleActionSubmit">
+          {{ actionMode === 'transfer' ? '确认转交' : '确认重新打开' }}
+        </el-button>
+      </template>
+    </el-dialog>
+
+    <!-- 图片预览 -->
+    <ImageViewer v-model:visible="attachmentPreviewVisible" :images="attachmentPreviewImages"
+      :initial-index="attachmentPreviewIndex" />
+    <ImageViewer v-model:visible="logPreviewVisible" :images="logPreviewImages" :initial-index="logPreviewIndex" />
+  </div>
+</template>
+
+<script setup>
+import { ref, computed, watch, onMounted, onUnmounted } from "vue";
+import { useRouter } from "vue-router";
+import { ElMessage } from "element-plus";
+import { getTicketDetail, updateTicketStatus, transferTicket, reopenTicket, listComments, createComment, listAssignees } from "../api/tickets";
+import { useAuthStore } from "../stores/auth";
+import { useNotificationStore } from "../stores/notification";
+import StatusBadge from "../components/StatusBadge.vue";
+import CommentItem from "../components/CommentItem.vue";
+import FileUpload from "../components/FileUpload.vue";
+import ImageViewer from "../components/ImageViewer.vue";
+
+const props = defineProps({
+  ticketId: { type: [String, Number], required: true },
+  // 重新打开后是否跳回工单列表：仅相似工单抽屉场景为 true；详情页场景停留原地刷新
+  navigateToHomeOnReopen: { type: Boolean, default: false },
+});
+
+const router = useRouter();
+const authStore = useAuthStore();
+const notificationStore = useNotificationStore();
+
+const ticket = ref(null);
+const comments = ref([]);
+const loading = ref(false);
+const newComment = ref("");
+const commentFileUploadRef = ref(null);
+const submitting = ref(false);
+const internalUsers = ref([]);
+
+// 转工单 / 重新打开 共用弹窗
+const showActionDialog = ref(false);
+const actionMode = ref("transfer"); // 'transfer' | 'reopen'
+const actionSubmitting = ref(false);
+const actionForm = ref({ toUserId: null, content: "" });
+const actionFileUploadRef = ref(null);
+
+function openActionDialog(mode) {
+  actionMode.value = mode;
+  actionForm.value = { toUserId: null, content: "" };
+  showActionDialog.value = true;
+}
+
+// Attachment image preview
+const attachmentPreviewVisible = ref(false);
+const attachmentPreviewIndex = ref(0);
+const attachmentPreviewImages = computed(() => {
+  if (!ticket.value?.attachments) return [];
+  return ticket.value.attachments
+    .filter(a => a.fileType.startsWith("image/"))
+    .map(a => ({ url: `/api/attachments/${a.id}`, name: a.fileName }));
+});
+function openAttachmentPreview(idx) {
+  attachmentPreviewIndex.value = idx;
+  attachmentPreviewVisible.value = true;
+}
+
+// 流转记录附件预览
+const logPreviewVisible = ref(false);
+const logPreviewIndex = ref(0);
+const logPreviewImages = ref([]);
+function openLogPreview(log, att) {
+  const imgs = (log.attachments || []).filter(a => a.fileType.startsWith("image/"));
+  logPreviewImages.value = imgs.map(a => ({ url: `/api/attachments/${a.id}`, name: a.fileName }));
+  logPreviewIndex.value = imgs.indexOf(att);
+  logPreviewVisible.value = true;
+}
+
+// 转交候选人：处理人已是自己时排除自己（转给自己无意义），处理人是别人时可选自己
+const transferCandidates = computed(() => {
+  if (ticket.value?.assigneeId === authStore.user?.id) {
+    return internalUsers.value.filter(u => u.id !== authStore.user?.id);
+  }
+  return internalUsers.value;
+});
+
+const INTERNAL_ROLES = ["data_maintenance", "dev_lead", "developer", "tester", "admin"];
+const isInternal = computed(() => INTERNAL_ROLES.includes(authStore.user?.role));
+// 操作权：仅处理人或管理员（admin/dev_lead），公开工单的非相关内部人员只读
+const canOperate = computed(
+  () => ["admin", "dev_lead"].includes(authStore.user?.role) || ticket.value?.assigneeId === authStore.user?.id,
+);
+
+const roleMap = {
+  customer: "客户",
+  data_maintenance: "数据维护",
+  dev_lead: "系统开发主管",
+  developer: "系统开发",
+  tester: "测试",
+  admin: "管理员",
+};
+function roleLabel(role) { return roleMap[role] || role; }
+
+const typeMap = { bug: { label: "Bug", type: "danger" }, question: { label: "使用问题", type: "warning" } };
+const priorityMap = { low: "低", medium: "中", high: "高" };
+const typeLabel = computed(() => typeMap[ticket.value?.type]?.label || "");
+const typeTagType = computed(() => typeMap[ticket.value?.type]?.type || "info");
+const priorityLabel = computed(() => priorityMap[ticket.value?.priority] || "");
+
+const statusLabelMap = { pending: "待处理", processing: "处理中", resolved: "已解决", closed: "已关闭" };
+
+function logActionText(log) {
+  switch (log.action) {
+    case "created": return " 创建了工单";
+    case "assigned": return ` 将工单分配给 ${log.toAssignee?.realName || ""}`;
+    case "transferred": return ` 将工单转交给 ${log.toAssignee?.realName || ""}`;
+    case "reopened": return " 重新打开了工单，状态变更为「待处理」";
+    case "status_changed": return ` 将状态从「${statusLabelMap[log.fromStatus] || log.fromStatus}」变更为「${statusLabelMap[log.toStatus] || log.toStatus}」`;
+    case "commented": return " 发表了评论";
+    default: return ` ${log.action}`;
+  }
+}
+
+function logActionColor(action) {
+  const map = { created: "primary", assigned: "warning", transferred: "warning", reopened: "primary", status_changed: "success", commented: "info" };
+  return map[action] || "info";
+}
+
+function formatTime(time) {
+  if (!time) return "";
+  const d = new Date(time);
+  return `${d.getFullYear()}/${d.getMonth() + 1}/${d.getDate()} ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+}
+
+// 详情页实时轮询：停留时自动刷新讨论区与工单状态，新评论页面内提示
+const newCommentTip = ref(false);
+let detailTimer = null;
+let tipTimer = null;
+
+async function pollComments() {
+  try {
+    const list = await listComments(props.ticketId);
+    const oldIds = new Set(comments.value.map(c => c.id));
+    const fresh = (list || []).filter(c => !oldIds.has(c.id));
+    comments.value = list || [];
+    const fromOthers = fresh.filter(c => c.userId !== authStore.user?.id);
+    if (fromOthers.length && document.visibilityState === "visible") {
+      newCommentTip.value = true;
+      if (tipTimer) clearTimeout(tipTimer);
+      tipTimer = setTimeout(() => { newCommentTip.value = false; }, 6000);
+    }
+  } catch (e) { /* silent */ }
+}
+
+async function silentRefreshTicket() {
+  try { ticket.value = await getTicketDetail(props.ticketId); } catch (e) { /* silent */ }
+}
+
+function startDetailPolling() {
+  stopDetailPolling();
+  detailTimer = setInterval(() => {
+    pollComments();
+    silentRefreshTicket();
+  }, 10000);
+}
+
+function stopDetailPolling() {
+  if (detailTimer) { clearInterval(detailTimer); detailTimer = null; }
+}
+
+onMounted(() => {
+  loadAll();
+  startDetailPolling();
+});
+
+watch(() => props.ticketId, () => {
+  loadAll();
+  startDetailPolling();
+});
+
+onUnmounted(() => {
+  stopDetailPolling();
+  if (tipTimer) clearTimeout(tipTimer);
+});
+
+async function loadAll() {
+  fetchTicket();
+  fetchComments();
+  if (isInternal.value) fetchInternalUsers();
+}
+
+async function fetchTicket() {
+  loading.value = true;
+  try { ticket.value = await getTicketDetail(props.ticketId); } catch (e) { } finally { loading.value = false; }
+}
+
+async function fetchComments() {
+  try { comments.value = await listComments(props.ticketId); } catch (e) { }
+}
+
+async function fetchInternalUsers() {
+  try {
+    const users = await listAssignees();
+    // 不再排除自己：处理人是别人时也可以把工单转回给自己
+    internalUsers.value = users;
+  } catch (e) { }
+}
+
+async function handleStatusChange(status) {
+  if (status === ticket.value.status) return;
+  try {
+    await updateTicketStatus(props.ticketId, status);
+    ElMessage.success("状态更新成功");
+    notificationStore.fetchUnreadCount();
+    fetchTicket();
+  } catch (e) { }
+}
+
+async function handleActionSubmit() {
+  if (actionMode.value === "transfer") {
+    if (!actionForm.value.toUserId) { ElMessage.warning("请选择转交人"); return; }
+  }
+  if (!actionForm.value.content.trim()) { ElMessage.warning("请填写相关说明"); return; }
+  actionSubmitting.value = true;
+  try {
+    const attachmentIds = actionFileUploadRef.value ? await actionFileUploadRef.value.uploadAll() : [];
+    const mode = actionMode.value;
+    if (mode === "transfer") {
+      await transferTicket(props.ticketId, { ...actionForm.value, attachmentIds });
+      ElMessage.success("转工单成功");
+    } else {
+      await reopenTicket(props.ticketId, { content: actionForm.value.content, attachmentIds });
+      ElMessage.success("工单已重新打开");
+    }
+    showActionDialog.value = false;
+    actionForm.value = { toUserId: null, content: "" };
+    if (actionFileUploadRef.value) actionFileUploadRef.value.reset();
+    notificationStore.fetchUnreadCount();
+    if (mode === "reopen") {
+      // 相似工单抽屉：重新打开后跳回工单列表（列表页 onMounted 拉取最新数据）
+      // 工单详情页：停留当前页，刷新详情即可
+      if (props.navigateToHomeOnReopen) {
+        router.push("/");
+      } else {
+        fetchTicket();
+      }
+    } else {
+      fetchTicket();
+    }
+  } catch (e) { } finally { actionSubmitting.value = false; }
+}
+
+async function submitComment() {
+  if (!newComment.value.trim()) return;
+  submitting.value = true;
+  try {
+    const attachmentIds = commentFileUploadRef.value ? await commentFileUploadRef.value.uploadAll() : [];
+    await createComment(props.ticketId, { content: newComment.value, attachmentIds });
+    newComment.value = "";
+    if (commentFileUploadRef.value) commentFileUploadRef.value.reset();
+    ElMessage.success("评论发送成功");
+    fetchComments();
+    fetchTicket();
+    notificationStore.fetchUnreadCount();
+  } catch (e) { } finally { submitting.value = false; }
+}
+</script>
