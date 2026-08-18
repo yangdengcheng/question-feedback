@@ -69,4 +69,21 @@ async function notifyAssigned(ticket, assignee) {
   });
 }
 
-module.exports = { notifyNewTicket, notifyComment, notifyStatusChange, notifyAssigned };
+// 重新打开工单：通知处理人（若有且非操作人）与创建人（若非操作人）
+async function notifyReopen(ticket, operator) {
+  const userIds = new Set();
+  if (ticket.assigneeId && ticket.assigneeId !== operator.id) userIds.add(ticket.assigneeId);
+  if (ticket.userId !== operator.id) userIds.add(ticket.userId);
+  const notifications = [];
+  for (const uid of userIds) {
+    notifications.push({
+      userId: uid,
+      ticketId: ticket.id,
+      type: "status_change",
+      content: `${operator.realName} 重新打开了工单 ${ticket.ticketNo}，状态变更为待处理`,
+    });
+  }
+  if (notifications.length > 0) await Notification.bulkCreate(notifications);
+}
+
+module.exports = { notifyNewTicket, notifyComment, notifyStatusChange, notifyAssigned, notifyReopen };

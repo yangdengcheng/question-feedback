@@ -1,7 +1,7 @@
-const { Ticket, User, Attachment, TicketLog } = require("../models");
+const { sequelize, Ticket, User, Attachment, TicketLog } = require("../models");
 const { Op, fn, col } = require("sequelize");
 const { generateTicketNo } = require("../services/ticketService");
-const { notifyNewTicket, notifyStatusChange, notifyAssigned } = require("../services/notificationService");
+const { notifyNewTicket, notifyStatusChange, notifyAssigned, notifyReopen } = require("../services/notificationService");
 const { logAction } = require("../services/ticketLogService");
 
 const INTERNAL_ROLES = ["data_maintenance", "dev_lead", "developer", "tester", "admin"];
@@ -67,7 +67,12 @@ async function list(req, res, next) {
         { model: User, as: "creator", attributes: ["id", "username", "realName"] },
         { model: User, as: "assignee", attributes: ["id", "username", "realName"] },
       ],
-      order: [["updatedAt", "DESC"]],
+      // 排序：状态（待处理→处理中→已解决→已关闭）→ 优先级（高→中→低）→ 创建时间降序
+      order: [
+        [sequelize.literal("FIELD(status, 'pending', 'processing', 'resolved', 'closed')"), "ASC"],
+        [sequelize.literal("FIELD(priority, 'high', 'medium', 'low')"), "ASC"],
+        ["createdAt", "DESC"],
+      ],
       limit: parseInt(pageSize, 10),
       offset,
     });
@@ -120,6 +125,9 @@ async function updateStatus(req, res, next) {
     const { status } = req.body;
     const ticket = await Ticket.findByPk(req.params.id);
     if (!ticket) return res.status(404).json({ message: "工单不存在" });
+
+    // 已关闭工单统一走「重新打开」操作（必填说明 + 通知相关方），不再允许直接变更状态
+    if (ticket.status === "closed") return res.status(400).json({ message: "已关闭的工单请通过「重新打开」操作恢复" });
 
     // Internal roles can change status freely
     const INTERNAL_ROLES = ["data_maintenance", "dev_lead", "developer", "tester", "admin"];
@@ -260,4 +268,91 @@ async function stats(req, res, next) {
   } catch (error) { next(error); }
 }
 
-module.exports = { create, list, detail, updateStatus, transfer, listAssignees, stats };
+// 相似工单：title 的 ngram FULLTEXT 分词模糊查询（新建工单页左侧防重复提交提示用）
+// 采用 BOOLEAN 模式 + 应用侧拆 bigram：每个 bigram 作为可选词（OR 语义 + 相关度排序），
+// 规避 NATURAL LANGUAGE 模式「出现在 >50% 行的词被忽略」的小样本陷阱
+async function similar(req, res, next) {
+  try {
+    const keyword = String(req.query.keyword || "").trim();
+    if (keyword.length < 2) return res.json([]);
+
+    let phrase;
+    if (keyword.length === 2) {
+      phrase = keyword;
+    } else {
+      const grams = [];
+      for (let i = 0; i <= keyword.length - 2; i++) grams.push(keyword.slice(i, i + 2));
+      phrase = [...new Set(grams)].join(" ");
+    }
+
+    const matchExpr = `MATCH(title) AGAINST(${sequelize.escape(phrase)} IN BOOLEAN MODE)`;
+    // 召回所有可见工单（含自己历史创建的）：用户可能遗忘自己半年前提过的单，
+    // 需要能在相似列表里查到并直接「重新打开」，避免重复新建
+    const rows = await Ticket.findAll({
+      where: {
+        [Op.and]: [
+          sequelize.literal(matchExpr),
+          visibleWhere(req.user),
+        ],
+      },
+      attributes: ["id", "ticketNo", "title", "status", "priority", "type", "createdAt"],
+      order: sequelize.literal(`${matchExpr} DESC`),
+      limit: 6,
+    });
+    res.json(rows);
+  } catch (error) { next(error); }
+}
+
+// 重新打开工单：任何可见该工单的用户都可操作；处理人保持不变，状态回到待处理
+async function reopen(req, res, next) {
+  try {
+    const { content, attachmentIds } = req.body;
+    if (!content || !content.trim()) return res.status(400).json({ message: "相关说明必须填写" });
+
+    const ticket = await Ticket.findByPk(req.params.id);
+    if (!ticket) return res.status(404).json({ message: "工单不存在" });
+    if (ticket.status !== "closed") return res.status(400).json({ message: "仅已关闭的工单可重新打开" });
+
+    // 可见口径与详情一致：非可见用户无权重新打开
+    const canView =
+      req.user.role === "admin" ||
+      req.user.role === "dev_lead" ||
+      ticket.userId === req.user.id ||
+      ticket.assigneeId === req.user.id ||
+      !!ticket.isPublic;
+    if (!canView) return res.status(403).json({ message: "无权操作此工单" });
+
+    const oldStatus = ticket.status;
+    ticket.status = "pending"; // 处理人（assigneeId）保持不变
+    await ticket.save();
+
+    const log = await logAction({
+      ticketId: ticket.id,
+      userId: req.user.id,
+      action: "reopened",
+      fromStatus: oldStatus,
+      toStatus: "pending",
+      content: content.trim(),
+    });
+
+    // 关联附件到该流转记录
+    if (attachmentIds && attachmentIds.length > 0) {
+      await Attachment.update(
+        { logId: log.id, ticketId: ticket.id },
+        { where: { id: attachmentIds, uploadedBy: req.user.id } },
+      );
+    }
+
+    await notifyReopen(ticket, req.user);
+
+    const result = await Ticket.findByPk(ticket.id, {
+      include: [
+        { model: User, as: "creator", attributes: ["id", "username", "realName"] },
+        { model: User, as: "assignee", attributes: ["id", "username", "realName"] },
+      ],
+    });
+    res.json(result);
+  } catch (error) { next(error); }
+}
+
+module.exports = { create, list, detail, updateStatus, transfer, listAssignees, stats, similar, reopen };
