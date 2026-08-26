@@ -27,6 +27,9 @@
           <el-icon class="mr-1"><Flag /></el-icon>
           {{ priorityLabel }}
         </span>
+        <span v-if="ticket.systemCode">
+          所属系统：{{ ticket.systemCode }}
+        </span>
         <span v-if="ticket.creator">
           提交人：{{ ticket.creator.realName }}
         </span>

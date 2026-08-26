@@ -5,6 +5,8 @@
  *   - SQL 文件放在 migrations/ 目录下，按编号命名：001_init.sql、002_xxx.sql …
  *   - 已执行过的迁移记录在 _migrations 表中，不会重复执行。
  *   - 迁移文件内容为空或仅有注释时跳过。
+ *   - 一个文件可包含多条语句，以分号分隔逐条执行（sequelize.query 不开 multipleStatements）；
+ *     因此语句内的字符串不要包含分号。
  *
  * 用法：
  *   npm run migrate          执行所有未执行的迁移
@@ -12,7 +14,7 @@
  */
 const fs = require("fs");
 const path = require("path");
-const sequelize = require("../config/database");
+const sequelize = require("../src/config/database");
 
 const MIGRATIONS_DIR = __dirname;
 const TABLE_NAME = "_migrations";
@@ -22,6 +24,18 @@ function getMigrationFiles() {
     .readdirSync(MIGRATIONS_DIR)
     .filter((f) => /^\d{3}_.+\.sql$/.test(f))
     .sort();
+}
+
+// 按分号拆分语句：先剔除 -- 注释行，再按 ; 切分，返回非空语句列表
+function splitStatements(sql) {
+  const withoutComments = sql
+    .split("\n")
+    .filter((line) => !line.trim().startsWith("--"))
+    .join("\n");
+  return withoutComments
+    .split(";")
+    .map((s) => s.trim())
+    .filter((s) => s.length > 0);
 }
 
 async function ensureTable() {
@@ -67,7 +81,8 @@ async function run() {
   for (const file of pending) {
     const filePath = path.join(MIGRATIONS_DIR, file);
     const sql = fs.readFileSync(filePath, "utf8").trim();
-    if (!sql || sql.split("\n").every((l) => l.startsWith("--") || l === "")) {
+    const statements = splitStatements(sql);
+    if (statements.length === 0) {
       console.log(`  ${file} — 跳过（空文件）`);
       await sequelize.query(`INSERT INTO ${TABLE_NAME} (name) VALUES (:name)`, {
         replacements: { name: file },
@@ -76,7 +91,9 @@ async function run() {
     }
     const t = await sequelize.transaction();
     try {
-      await sequelize.query(sql, { transaction: t });
+      for (const statement of statements) {
+        await sequelize.query(statement, { transaction: t });
+      }
       await sequelize.query(
         `INSERT INTO ${TABLE_NAME} (name) VALUES (:name)`,
         { replacements: { name: file }, transaction: t },

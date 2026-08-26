@@ -80,20 +80,49 @@
             </div>
           </el-form-item>
 
-          <el-form-item label="类型" prop="type">
-            <el-radio-group v-model="form.type">
-              <el-radio-button value="bug">Bug</el-radio-button>
-              <el-radio-button value="question">使用问题</el-radio-button>
-            </el-radio-group>
-          </el-form-item>
+          <div class="flex flex-wrap items-start gap-x-12">
+            <el-form-item label="类型" prop="type">
+              <el-radio-group v-model="form.type">
+                <el-radio-button value="bug">Bug</el-radio-button>
+                <el-radio-button value="question">使用问题</el-radio-button>
+              </el-radio-group>
+            </el-form-item>
 
-          <el-form-item label="优先级" prop="priority">
-            <el-radio-group v-model="form.priority">
-              <el-radio-button value="low">低</el-radio-button>
-              <el-radio-button value="medium">中</el-radio-button>
-              <el-radio-button value="high">高</el-radio-button>
-            </el-radio-group>
-          </el-form-item>
+            <el-form-item prop="systemCode">
+              <template #label>
+                <span class="inline-flex items-center gap-1">
+                  所属系统
+                  <el-tooltip
+                    content="若需要选择的系统不存在，请联系【研发部-林慷】"
+                    placement="top"
+                  >
+                    <el-icon class="text-ink-text-3 cursor-help"><QuestionFilled /></el-icon>
+                  </el-tooltip>
+                </span>
+              </template>
+              <el-select
+                v-model="form.systemCode"
+                placeholder="请选择所属系统"
+                class="w-[240px]"
+                :loading="systemLoading"
+              >
+                <el-option
+                  v-for="item in systemOptions"
+                  :key="item.id"
+                  :label="item.dictValue"
+                  :value="item.dictValue"
+                />
+              </el-select>
+            </el-form-item>
+
+            <el-form-item label="优先级" prop="priority">
+              <el-radio-group v-model="form.priority">
+                <el-radio-button value="low">低</el-radio-button>
+                <el-radio-button value="medium">中</el-radio-button>
+                <el-radio-button value="high">高</el-radio-button>
+              </el-radio-group>
+            </el-form-item>
+          </div>
 
           <el-form-item label="详细描述" prop="description">
             <el-input
@@ -131,11 +160,12 @@
 </template>
 
 <script setup>
-import { ref, reactive, watch } from "vue";
+import { ref, reactive, watch, onMounted } from "vue";
 import { useRouter } from "vue-router";
 import { ElMessage } from "element-plus";
-import { Search } from "@element-plus/icons-vue";
+import { Search, QuestionFilled } from "@element-plus/icons-vue";
 import { createTicket, listSimilarTickets } from "../api/tickets";
+import { getDictValues } from "../api/dicts";
 import FileUpload from "../components/FileUpload.vue";
 import TicketDetailPanel from "../components/TicketDetailPanel.vue";
 
@@ -148,14 +178,31 @@ const form = reactive({
   title: "",
   type: "bug",
   priority: "medium",
+  systemCode: "", // 所属系统（system_code 字典值）
   description: "",
   isPublic: true, // 滑块开关：false=非公开 true=公开（默认）
 });
 
 const rules = {
   title: [{ required: true, message: "请输入标题", trigger: "blur" }],
+  systemCode: [{ required: true, message: "请选择所属系统", trigger: "change" }],
   description: [{ required: true, message: "请填写详细描述", trigger: "blur" }],
 };
+
+// ---------- 所属系统下拉（system_code 字典，通用字典工具拉取） ----------
+const systemOptions = ref([]);
+const systemLoading = ref(false);
+
+onMounted(async () => {
+  systemLoading.value = true;
+  try {
+    systemOptions.value = await getDictValues("system_code");
+  } catch (error) {
+    // 错误已在拦截器中提示，下拉保持空
+  } finally {
+    systemLoading.value = false;
+  }
+});
 
 // ---------- 相似工单 ----------
 const similarList = ref([]);

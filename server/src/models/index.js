@@ -9,6 +9,7 @@ const ToolDict = require("./ToolDict");
 const ToolPackage = require("./ToolPackage");
 const ToolPackageVersion = require("./ToolPackageVersion");
 const Workbench = require("./Workbench");
+const SysDict = require("./SysDict");
 
 // User <-> Ticket (creator)
 User.hasMany(Ticket, { foreignKey: "userId", as: "tickets" });
@@ -79,5 +80,5 @@ Workbench.belongsTo(User, { foreignKey: "createdBy", as: "creator" });
 
 module.exports = {
   sequelize, User, Ticket, Comment, Attachment, Notification, TicketLog,
-  ToolDict, ToolPackage, ToolPackageVersion, Workbench,
+  ToolDict, ToolPackage, ToolPackageVersion, Workbench, SysDict,
 };

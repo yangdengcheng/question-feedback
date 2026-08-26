@@ -1,18 +1,21 @@
 const request = require("supertest");
 const app = require("../src/app");
-const { sequelize, Notification } = require("../src/models");
+const { sequelize, Notification, SysDict } = require("../src/models");
 
 let token, userId;
+
+const SYSTEM_VALUE = "新江苏电力交易辅助系统";
 
 beforeAll(async () => { await sequelize.sync({ force: true }); });
 afterAll(async () => { await sequelize.close(); });
 
 beforeEach(async () => {
   await sequelize.sync({ force: true });
+  await SysDict.create({ dictCode: "system_code", dictValue: SYSTEM_VALUE });
   const regRes = await request(app).post("/api/auth/register").send({ username: "testuser", password: "password123", realName: "测试用户" });
   token = regRes.body.token;
   userId = regRes.body.user.id;
-  const ticketRes = await request(app).post("/api/tickets").set("Authorization", `Bearer ${token}`).send({ title: "测试工单", type: "bug" });
+  const ticketRes = await request(app).post("/api/tickets").set("Authorization", `Bearer ${token}`).send({ title: "测试工单", type: "bug", systemCode: SYSTEM_VALUE });
   await Notification.bulkCreate([
     { userId, ticketId: ticketRes.body.id, type: "new_comment", content: "测试通知1" },
     { userId, ticketId: ticketRes.body.id, type: "status_change", content: "测试通知2" },

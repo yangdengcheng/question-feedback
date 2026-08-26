@@ -1,18 +1,21 @@
 const request = require("supertest");
 const app = require("../src/app");
-const { sequelize } = require("../src/models");
+const { sequelize, SysDict } = require("../src/models");
 
 let token;
 let ticketId;
+
+const SYSTEM_VALUE = "新江苏电力交易辅助系统";
 
 beforeAll(async () => { await sequelize.sync({ force: true }); });
 afterAll(async () => { await sequelize.close(); });
 
 beforeEach(async () => {
   await sequelize.sync({ force: true });
+  await SysDict.create({ dictCode: "system_code", dictValue: SYSTEM_VALUE });
   const regRes = await request(app).post("/api/auth/register").send({ username: "testuser", password: "password123", realName: "测试用户" });
   token = regRes.body.token;
-  const ticketRes = await request(app).post("/api/tickets").set("Authorization", `Bearer ${token}`).send({ title: "测试工单", type: "bug" });
+  const ticketRes = await request(app).post("/api/tickets").set("Authorization", `Bearer ${token}`).send({ title: "测试工单", type: "bug", systemCode: SYSTEM_VALUE });
   ticketId = ticketRes.body.id;
 });
 

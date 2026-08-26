@@ -1,15 +1,18 @@
 const request = require("supertest");
 const app = require("../src/app");
-const { sequelize, User } = require("../src/models");
+const { sequelize, User, SysDict } = require("../src/models");
 const bcrypt = require("bcryptjs");
 
 let adminToken, userToken, adminId, userId;
+
+const SYSTEM_VALUE = "新江苏电力交易辅助系统";
 
 beforeAll(async () => { await sequelize.sync({ force: true }); });
 afterAll(async () => { await sequelize.close(); });
 
 beforeEach(async () => {
   await sequelize.sync({ force: true });
+  await SysDict.create({ dictCode: "system_code", dictValue: SYSTEM_VALUE });
   const passwordHash = await bcrypt.hash("admin123", 10);
   const admin = await User.create({ username: "admin", passwordHash, realName: "管理员", role: "admin" });
   adminId = admin.id;
@@ -22,7 +25,7 @@ beforeEach(async () => {
 
 describe("GET /api/admin/tickets", () => {
   beforeEach(async () => {
-    await request(app).post("/api/tickets").set("Authorization", `Bearer ${userToken}`).send({ title: "测试工单", type: "bug" });
+    await request(app).post("/api/tickets").set("Authorization", `Bearer ${userToken}`).send({ title: "测试工单", type: "bug", systemCode: SYSTEM_VALUE });
   });
   it("管理员应该能查看所有工单", async () => {
     const res = await request(app).get("/api/admin/tickets").set("Authorization", `Bearer ${adminToken}`);
@@ -37,7 +40,7 @@ describe("GET /api/admin/tickets", () => {
 
 describe("PATCH /api/admin/tickets/:id", () => {
   it("应该能分配工单", async () => {
-    const ticketRes = await request(app).post("/api/tickets").set("Authorization", `Bearer ${userToken}`).send({ title: "测试工单", type: "bug" });
+    const ticketRes = await request(app).post("/api/tickets").set("Authorization", `Bearer ${userToken}`).send({ title: "测试工单", type: "bug", systemCode: SYSTEM_VALUE });
     const res = await request(app).patch(`/api/admin/tickets/${ticketRes.body.id}`).set("Authorization", `Bearer ${adminToken}`).send({ assigneeId: adminId, status: "processing" });
     expect(res.status).toBe(200);
     expect(res.body.assigneeId).toBe(adminId);
