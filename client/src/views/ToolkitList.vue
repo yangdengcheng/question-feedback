@@ -57,8 +57,11 @@
           <span class="badge">{{ pkg.category?.name }}</span>
         </div>
         <p class="text-sm text-ink-text-2 line-clamp-2 min-h-[40px]">{{ pkg.summary || "暂无简介" }}</p>
-        <div class="text-xs text-ink-text-3 tnum mt-auto pt-2 border-t border-line">
-          更新于 {{ formatTime(pkg.updatedAt) }}
+        <div class="text-xs text-ink-text-3 tnum mt-auto pt-2 border-t border-line flex items-center justify-between gap-2">
+          <span>更新于 {{ formatTime(pkg.updatedAt) }}</span>
+          <span class="inline-flex items-center gap-1 shrink-0" :title="`下载量 ${pkg.downloads || 0}`">
+            <el-icon :size="14"><Download /></el-icon>{{ pkg.downloads || 0 }}
+          </span>
         </div>
       </router-link>
     </div>

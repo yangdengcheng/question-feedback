@@ -62,7 +62,7 @@ async function createVersion(req, res, next) {
 async function download(req, res, next) {
   try {
     const ver = await ToolPackageVersion.findByPk(req.params.vid, {
-      include: [{ model: ToolPackage, as: "package", attributes: ["id", "isActive"] }],
+      include: [{ model: ToolPackage, as: "package", attributes: ["id", "isActive", "currentVersionId"] }],
     });
     if (!ver) return res.status(404).json({ message: "版本不存在" });
     if (!ver.package.isActive && !MAINTAINER_ROLES.includes(req.user.role)) {
@@ -70,6 +70,10 @@ async function download(req, res, next) {
     }
     const abs = path.resolve(ver.fileUrl);
     if (!fs.existsSync(abs)) return res.status(404).json({ message: "文件不存在" });
+    // 下载最新版本时下载量 +1（原子自增，避免并发丢更新）
+    if (ver.id === ver.package.currentVersionId) {
+      await ToolPackage.increment({ downloads: 1 }, { where: { id: ver.package.id } });
+    }
     res.download(abs, repairFileName(ver.fileName));
   } catch (error) {
     next(error);

@@ -12,6 +12,7 @@ const ToolPackage = sequelize.define(
     docMarkdown: { type: DataTypes.TEXT("long"), allowNull: true, field: "doc_markdown" },
     isActive: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: true, field: "is_active" },
     currentVersionId: { type: DataTypes.INTEGER, allowNull: true, field: "current_version_id" },
+    downloads: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 0 },
     createdBy: { type: DataTypes.INTEGER, allowNull: false, field: "created_by" },
   },
   { tableName: "tool_packages" },

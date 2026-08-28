@@ -125,6 +125,7 @@ CREATE TABLE IF NOT EXISTS tool_packages (
   doc_markdown       MEDIUMTEXT   NULL COMMENT '说明文档（Markdown）',
   current_version_id INT          NULL COMMENT '当前最新版本',
   is_active          TINYINT(1)   NOT NULL DEFAULT 1 COMMENT '上架状态',
+  downloads          INT          NOT NULL DEFAULT 0 COMMENT '下载量',
   created_by         INT          NOT NULL COMMENT '创建人',
   created_at         DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at         DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
