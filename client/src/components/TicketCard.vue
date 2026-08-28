@@ -37,7 +37,7 @@
           处理人：{{ ticket.assignee.realName }}
         </span>
       </div>
-      <span>{{ formatTime(ticket.updatedAt) }}</span>
+      <span>{{ formatTime(ticket.createdAt) }}</span>
     </div>
   </div>
 </template>
@@ -78,7 +78,8 @@ const priorityLabel = computed(
 function formatTime(time) {
   if (!time) return "";
   const d = new Date(time);
-  return `${d.getMonth() + 1}/${d.getDate()} ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+  const pad = (n) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
 function goDetail() {
