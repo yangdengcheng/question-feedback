@@ -18,7 +18,6 @@
             v-for="wb in topList"
             :key="wb.id"
             class="rank-item"
-            :title="wb.url"
             @click="openWorkbench(wb)"
           >
             <span class="flex-1 min-w-0 truncate text-left">{{ wb.name }}</span>
@@ -58,10 +57,15 @@
 
       <!-- 卡片网格：一行三个 -->
       <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        <div
+        <LinkPreview
           v-for="wb in items"
           :key="wb.id"
-          class="panel panel-hover p-[10px] flex flex-col gap-3 cursor-pointer"
+          :url="wb.url"
+          :width="420"
+          :height="260"
+        >
+        <div
+          class="panel panel-hover p-[10px] flex flex-col gap-3 cursor-pointer h-full"
           @click="openWorkbench(wb)"
         >
           <div class="flex items-center justify-between gap-2">
@@ -81,7 +85,7 @@
             </div>
           </div>
 
-          <p class="text-xs text-ink-text-2 tnum truncate" :title="wb.url">{{ wb.url }}</p>
+          <p class="text-xs text-ink-text-2 tnum truncate">{{ wb.url }}</p>
 
           <div
             class="text-xs text-ink-text-3 tnum mt-auto pt-2 border-t border-line flex items-center justify-between gap-2"
@@ -93,6 +97,7 @@
             </span>
           </div>
         </div>
+        </LinkPreview>
       </div>
 
       <!-- 极简分页：上一页 / 页码（点击可跳页）/ 下一页 -->
@@ -209,6 +214,7 @@ import {
   updateWorkbench,
   deleteWorkbench,
 } from "../api/workbench";
+import LinkPreview from "../components/LinkPreview.vue";
 
 const authStore = useAuthStore();
 
