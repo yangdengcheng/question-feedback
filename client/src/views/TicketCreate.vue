@@ -22,7 +22,7 @@
           v-else-if="similarList.length === 0"
           class="text-xs text-ink-text-3 leading-relaxed py-8 px-2 text-center"
         >
-          输入标题后，这里会展示相似的已有工单，<br />先看看是否已有人提交过。
+          对于已关闭的工单，若问题再次出现，<br/>可以<b>重新打开工单</b>，不必新建。
         </div>
         <ul v-else class="space-y-2">
           <li v-for="t in similarList" :key="t.id">
