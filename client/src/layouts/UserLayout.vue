@@ -115,7 +115,7 @@
       </div>
     </header>
 
-    <main class="flex-1 max-w-6xl mx-auto w-full px-6 py-8">
+    <main class="flex-1 max-w-6xl mx-auto w-full px-6 pt-8 pb-2">
       <router-view />
     </main>
   </div>
