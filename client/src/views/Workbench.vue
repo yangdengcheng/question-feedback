@@ -63,6 +63,7 @@
           v-for="wb in items"
           :key="wb.id"
           :url="wb.url"
+          :title="wb.name"
           :width="420"
           :height="260"
         >

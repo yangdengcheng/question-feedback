@@ -12,6 +12,7 @@ import { showPreview, hidePreview } from "./previewPool";
 
 const props = defineProps({
   url: { type: String, default: "" },
+  title: { type: String, default: "" },
   width: { type: Number, default: 420 },
   height: { type: Number, default: 260 },
 });
@@ -36,7 +37,7 @@ function computeStyle() {
 
 function handleMouseEnter() {
   if (!props.url) return;
-  showPreview(props.url, computeStyle());
+  showPreview(props.url, computeStyle(), props.title);
 }
 
 function handleMouseLeave() {

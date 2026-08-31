@@ -15,6 +15,7 @@ const PAD = 8;
 let host = null;
 let viewport = null;
 let loading = null;
+let label = null;
 let hideTimer = null;
 const pool = new Map(); // url -> { iframe, lastUsed }
 
@@ -56,7 +57,16 @@ function initHost() {
     "align-items:center;justify-content:center;font-size:12px;color:#94a3b8;" +
     "background:rgba(255,255,255,.92);";
 
+  // 左下角灰底名称标签：悬浮预览时展示工作台完整名称（长名自动换行不截断；放底部避免遮挡目标页 header）
+  label = document.createElement("div");
+  label.style.cssText =
+    "position:absolute;bottom:8px;left:8px;z-index:3;display:none;max-width:calc(100% - 16px);" +
+    "padding:2px 8px;border-radius:6px;font-size:12px;line-height:18px;color:#fff;" +
+    "background:rgba(100,116,139,.85);box-sizing:border-box;" +
+    "white-space:normal;word-break:break-all;";
+
   viewport.appendChild(loading);
+  viewport.appendChild(label);
   frameBox.appendChild(viewport);
   host.appendChild(frameBox);
   document.body.appendChild(host);
@@ -105,7 +115,7 @@ function destroyPool() {
   pool.clear();
 }
 
-export function showPreview(url, style) {
+export function showPreview(url, style, title) {
   if (!url) return;
   initHost();
   syncTheme();
@@ -120,6 +130,14 @@ export function showPreview(url, style) {
   host.classList.remove("lp-pop");
   void host.offsetWidth;
   host.classList.add("lp-pop");
+
+  // 名称标签：有名称就显示，没有就隐藏
+  if (title) {
+    label.textContent = title;
+    label.style.display = "block";
+  } else {
+    label.style.display = "none";
+  }
 
   let entry = pool.get(url);
   if (!entry) {
