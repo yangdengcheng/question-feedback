@@ -24,7 +24,11 @@ function injectStyle() {
   styleEl.id = "lp-pool-style";
   styleEl.textContent =
     "@keyframes lp-pop{0%{transform:scale3d(.4,.4,1)}60%{transform:scale3d(1.03,1.03,1)}100%{transform:scale3d(1,1,1)}}" +
-    ".lp-pop{animation:lp-pop .3s ease;transform-origin:center bottom;}";
+    ".lp-pop{animation:lp-pop .3s ease;transform-origin:center bottom;}" +
+    "@keyframes lp-spin{to{transform:rotate(360deg)}}" +
+    ".lp-spinner{width:28px;height:28px;border-radius:50%;" +
+    "border:3px solid rgba(148,163,184,.25);border-top-color:#f59e0b;" +
+    "animation:lp-spin .8s linear infinite;}";
   document.head.appendChild(styleEl);
 }
 
@@ -45,10 +49,12 @@ function initHost() {
     "position:relative;width:100%;height:100%;border-radius:8px;overflow:hidden;background:#fff;";
 
   loading = document.createElement("div");
-  loading.textContent = "正在加载预览…";
+  loading.innerHTML = '<div class="lp-spinner"></div><span>正在加载预览…</span>';
+  // z-index 必须压过 iframe：两者同为绝对定位，iframe 后插入 DOM 会盖住无层级的 loading
   loading.style.cssText =
-    "position:absolute;inset:0;display:flex;align-items:center;justify-content:center;" +
-    "font-size:12px;color:#9ca3af;";
+    "position:absolute;inset:0;z-index:2;display:none;flex-direction:column;gap:10px;" +
+    "align-items:center;justify-content:center;font-size:12px;color:#94a3b8;" +
+    "background:rgba(255,255,255,.92);";
 
   viewport.appendChild(loading);
   frameBox.appendChild(viewport);
@@ -61,6 +67,7 @@ function syncTheme() {
   const bg = dark ? "#111827" : "#ffffff";
   host.firstElementChild.style.background = bg;
   viewport.style.background = bg;
+  loading.style.background = dark ? "rgba(17,24,39,.92)" : "rgba(255,255,255,.92)";
 }
 
 function makeFrame(url, style) {
