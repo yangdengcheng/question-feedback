@@ -16,7 +16,7 @@
         class="rounded-xl px-4 py-3 text-sm leading-relaxed"
         :class="
           isOwn
-            ? 'bg-accent-soft border border-accent-border text-ink-text'
+            ? 'bg-accent-soft border border-accent-border text-ink-text [box-shadow:var(--shadow-panel)]'
             : 'panel text-ink-text-2'
         "
       >

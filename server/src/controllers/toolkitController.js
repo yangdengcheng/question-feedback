@@ -22,7 +22,7 @@ async function list(req, res, next) {
         { model: ToolDict, as: "category", attributes: ["id", "name", "code"] },
         { model: ToolPackageVersion, as: "currentVersion", attributes: ["id", "version"] },
       ],
-      order: [["updatedAt", "DESC"]],
+      order: [["createdAt", "DESC"]],
       limit: pageSize,
       offset: (page - 1) * pageSize,
     });

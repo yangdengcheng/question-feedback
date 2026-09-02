@@ -2,7 +2,7 @@ const fs = require("fs");
 const path = require("path");
 const { sequelize, ToolPackage, ToolPackageVersion, User } = require("../models");
 const { MAINTAINER_ROLES } = require("../middleware/roles");
-const { repairFileName, removeFileQuiet } = require("../utils/file");
+const { repairFileName, removeFileQuiet, resolveAttachmentPath } = require("../utils/file");
 
 async function listVersions(req, res, next) {
   try {
@@ -68,8 +68,9 @@ async function download(req, res, next) {
     if (!ver.package.isActive && !MAINTAINER_ROLES.includes(req.user.role)) {
       return res.status(404).json({ message: "版本不存在" });
     }
-    const abs = path.resolve(ver.fileUrl);
-    if (!fs.existsSync(abs)) return res.status(404).json({ message: "文件不存在" });
+    // 兼容两种存储格式：旧记录为绝对路径，新记录只有文件名（回退 uploads 目录查找）
+    const abs = resolveAttachmentPath(ver.fileUrl);
+    if (!abs) return res.status(404).json({ message: "文件不存在" });
     // 下载最新版本时下载量 +1（原子自增，避免并发丢更新）
     if (ver.id === ver.package.currentVersionId) {
       await ToolPackage.increment({ downloads: 1 }, { where: { id: ver.package.id } });
@@ -103,7 +104,9 @@ async function deleteVersion(req, res, next) {
       await t.rollback();
       throw error;
     }
-    removeFileQuiet(ver.fileUrl);
+    // 同样兼容文件名格式，否则真实文件删不掉（会解析到进程工作目录）
+    const diskPath = resolveAttachmentPath(ver.fileUrl);
+    if (diskPath) removeFileQuiet(diskPath);
     res.json({ message: "版本已删除" });
   } catch (error) {
     next(error);
