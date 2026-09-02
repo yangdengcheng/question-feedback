@@ -47,6 +47,8 @@ async function login(req, res, next) {
     if (!isMatch) {
       return res.status(401).json({ message: "用户名或密码错误" });
     }
+    // 最后登录时间：仅登录成功时写入，退出登录不清空
+    await user.update({ lastLoginAt: new Date() });
     const token = generateToken(user);
     res.json({ token, user: sanitizeUser(user) });
   } catch (error) {

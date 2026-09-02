@@ -40,8 +40,9 @@
       </p>
     </div>
 
-    <!-- 卡片网格 -->
-    <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+    <!-- 卡片网格：固定高度内部滚动，页面不出纵向滚动条 -->
+    <div v-else class="grid-scroll-wrap">
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
       <router-link
         v-for="pkg in packages"
         :key="pkg.id"
@@ -64,19 +65,7 @@
           </span>
         </div>
       </router-link>
-    </div>
-
-    <!-- 分页 -->
-    <div v-if="total > 0" class="flex justify-center mt-8">
-      <el-pagination
-        v-model:current-page="page"
-        v-model:page-size="pageSize"
-        :page-sizes="[12, 24, 48]"
-        :total="total"
-        layout="total, sizes, prev, pager, next"
-        @current-change="fetchPackages"
-        @size-change="handleSizeChange"
-      />
+      </div>
     </div>
 
     <!-- 字典管理弹窗 -->
@@ -157,36 +146,28 @@ async function fetchDicts() {
 // 列表
 const packages = ref([]);
 const loading = ref(false);
-const page = ref(1);
-const pageSize = ref(12);
-const total = ref(0);
 const keyword = ref("");
 const filters = reactive({ provinceId: "", categoryId: "" });
 
 let searchTimer = null;
 function handleSearch() {
   clearTimeout(searchTimer);
-  searchTimer = setTimeout(() => { page.value = 1; fetchPackages(); }, 300);
+  searchTimer = setTimeout(() => fetchPackages(), 300);
 }
 function handleFilterChange() {
-  page.value = 1;
-  fetchPackages();
-}
-function handleSizeChange() {
-  page.value = 1;
   fetchPackages();
 }
 
 async function fetchPackages() {
   loading.value = true;
   try {
-    const params = { page: page.value, pageSize: pageSize.value };
+    // 不分页：后端 pageSize 上限 100，工具包数量远小于此，一次拉全量
+    const params = { page: 1, pageSize: 100 };
     if (keyword.value) params.keyword = keyword.value;
     if (filters.provinceId) params.provinceId = filters.provinceId;
     if (filters.categoryId) params.categoryId = filters.categoryId;
     const data = await listPackages(params);
     packages.value = data.rows || [];
-    total.value = data.count || 0;
   } catch (e) { /* 拦截器已处理 */ } finally {
     loading.value = false;
   }
@@ -249,3 +230,14 @@ onMounted(() => {
   fetchPackages();
 });
 </script>
+
+<style scoped>
+/* 卡片网格固定高度，内部出纵向滚动条，页面本身不滚动；
+   250px = 顶部导航 60 + main 上边距 32 + 标题行 52 + 筛选区 88 + main 下边距 8 + 余量 10 */
+.grid-scroll-wrap {
+  height: calc(100vh - 250px);
+  min-height: 280px;
+  overflow-y: auto;
+  padding: 4px;
+}
+</style>
