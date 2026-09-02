@@ -60,6 +60,9 @@
   --input-bg: rgba(11, 17, 32, 0.6);
   --autofill-bg: rgba(11, 17, 32, 0.6);
   --table-header-bg: rgba(26, 36, 56, 0.55);
+  /* 固定列专用不透明底色（= 半透明表头/悬停色叠在面板色上的实色等价） */
+  --table-header-bg-solid: #162032;
+  --table-row-hover-bg-solid: #1c212b;
   --mask-bg: rgba(4, 8, 18, 0.7);
   --scrollbar-thumb: rgba(148, 163, 184, 0.22);
   --scrollbar-thumb-hover: rgba(148, 163, 184, 0.38);
@@ -132,6 +135,8 @@
   --input-bg: rgba(248, 250, 252, 0.9);
   --autofill-bg: rgba(255, 255, 255, 0.95);
   --table-header-bg: rgba(248, 250, 252, 0.9);
+  --table-header-bg-solid: #f9fbfc;
+  --table-row-hover-bg-solid: #fefcf5;
   --mask-bg: rgba(15, 23, 42, 0.4);
   --scrollbar-thumb: rgba(15, 23, 42, 0.18);
   --scrollbar-thumb-hover: rgba(15, 23, 42, 0.32);
@@ -629,6 +634,20 @@ input:-internal-autofill-selected {
 .el-table th.el-table__cell {
   font-weight: 600;
   letter-spacing: 0.03em;
+}
+/* 固定列（sticky）必须不透明：表格整体透明是为了透出面板底色，
+   但固定列叠在横向滚动层之上，透明就会让底下滚过的列透出来 */
+.el-table .el-table__header-wrapper tr th.el-table-fixed-column--left,
+.el-table .el-table__header-wrapper tr th.el-table-fixed-column--right {
+  background-color: var(--table-header-bg-solid);
+}
+.el-table .el-table__body-wrapper tr td.el-table-fixed-column--left,
+.el-table .el-table__body-wrapper tr td.el-table-fixed-column--right {
+  background-color: var(--surface);
+}
+.el-table .el-table__body-wrapper tr.hover-row > td.el-table-fixed-column--left,
+.el-table .el-table__body-wrapper tr.hover-row > td.el-table-fixed-column--right {
+  background-color: var(--table-row-hover-bg-solid);
 }
 
 /* 分页 */

@@ -2,7 +2,7 @@
   <div class="panel panel-hover p-5 cursor-pointer" @click="goDetail">
     <div class="flex items-start justify-between mb-3">
       <div class="flex items-center gap-3">
-        <span class="text-xs text-ink-text-3 font-mono tnum">{{
+        <span class="text-xs text-ink-text-3">{{
           ticket.ticketNo
         }}</span>
         <el-tag

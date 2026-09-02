@@ -51,14 +51,14 @@
       >
         <div class="flex items-start justify-between gap-2">
           <h3 class="text-base font-semibold text-ink-text leading-snug">{{ pkg.name }}</h3>
-          <span v-if="pkg.currentVersion" class="badge tnum shrink-0">v{{ pkg.currentVersion.version }}</span>
+          <span v-if="pkg.currentVersion" class="badge shrink-0">v{{ pkg.currentVersion.version }}</span>
         </div>
         <div class="flex items-center gap-2 flex-wrap">
           <span class="badge">{{ pkg.province?.name }}</span>
           <span class="badge">{{ pkg.category?.name }}</span>
         </div>
         <p class="text-sm text-ink-text-2 line-clamp-2 min-h-[40px]">{{ pkg.summary || "暂无简介" }}</p>
-        <div class="text-xs text-ink-text-3 tnum mt-auto pt-2 border-t border-line flex items-center justify-between gap-2">
+        <div class="text-xs text-ink-text-3 mt-auto pt-2 border-t border-line flex items-center justify-between gap-2">
           <span>更新于 {{ formatTime(pkg.updatedAt) }}</span>
           <span class="inline-flex items-center gap-1 shrink-0" :title="`下载量 ${pkg.downloads || 0}`">
             <el-icon :size="14"><Download /></el-icon>{{ pkg.downloads || 0 }}

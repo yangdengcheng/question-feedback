@@ -8,7 +8,7 @@
         <span class="text-xs font-medium text-ink-text-2">{{
           comment.author?.realName
         }}</span>
-        <span class="text-xs text-ink-text-3 tnum">{{
+        <span class="text-xs text-ink-text-3">{{
           formatTime(comment.createdAt)
         }}</span>
       </div>
