@@ -7,7 +7,7 @@ function like(v) {
   return { [Op.like]: `%${String(v).replace(/[%_]/g, "\\$&")}%` };
 }
 
-const PAGE_SIZE = 12; // 卡片布局：4 行 × 3 列
+const PAGE_SIZE = 15; // 卡片布局：5 行 × 3 列
 
 // 系统全部角色（与 users.role ENUM 一致）
 const VALID_ROLES = ["customer", "data_maintenance", "dev_lead", "developer", "tester", "admin"];
@@ -121,14 +121,14 @@ async function tags(req, res, next) {
   }
 }
 
-// 访问排行：按访问次数降序，只取前 10，且只统计当前用户可见的工作台
+// 访问排行：按访问次数降序，只取前 15，且只统计当前用户可见的工作台
 async function top(req, res, next) {
   try {
     const rows = await Workbench.findAll({
       where: visibleScope(req.user) || {},
       attributes: ["id", "name", "url", "visitCount"],
       order: [["visitCount", "DESC"], ["id", "DESC"]],
-      limit: 10,
+      limit: 15,
     });
     res.json(rows);
   } catch (error) {

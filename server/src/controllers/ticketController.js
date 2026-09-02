@@ -1,10 +1,13 @@
-const { sequelize, Ticket, User, Attachment, TicketLog } = require("../models");
+const { sequelize, Ticket, User, Attachment, TicketLog, SysDict } = require("../models");
 const { Op, fn, col } = require("sequelize");
 const { generateTicketNo } = require("../services/ticketService");
 const { notifyNewTicket, notifyStatusChange, notifyAssigned, notifyReopen } = require("../services/notificationService");
 const { logAction } = require("../services/ticketLogService");
 
 const INTERNAL_ROLES = ["data_maintenance", "dev_lead", "developer", "tester", "admin"];
+
+// 「所属系统」字典编码（下拉数据源，见 sys_dicts 表）
+const SYSTEM_DICT_CODE = "system_code";
 
 // 用户可见的工单数据范围（列表与看板统计共用，保证口径一致）：
 // admin/dev_lead 看全部；其他用户看「我创建的 + 分配给我的 + 公开的」
@@ -15,9 +18,20 @@ function visibleWhere(user) {
 
 async function create(req, res, next) {
   try {
-    const { title, description, type, priority, attachmentIds, isPublic } = req.body;
+    const { title, description, type, priority, attachmentIds, isPublic, systemCode } = req.body;
     if (!title) {
       return res.status(400).json({ message: "标题不能为空" });
+    }
+    // 所属系统：必填，且必须是 system_code 字典中启用状态的有效值，防止前端被绕过传入脏数据
+    const system = typeof systemCode === "string" ? systemCode.trim() : "";
+    if (!system) {
+      return res.status(400).json({ message: "请选择所属系统" });
+    }
+    const dictHit = await SysDict.findOne({
+      where: { dictCode: SYSTEM_DICT_CODE, dictValue: system, isActive: true },
+    });
+    if (!dictHit) {
+      return res.status(400).json({ message: "所属系统无效，请刷新页面后重新选择" });
     }
     const ticketNo = await generateTicketNo();
     const ticket = await Ticket.create({
@@ -25,6 +39,7 @@ async function create(req, res, next) {
       description: description || null,
       type: type || "bug",
       priority: priority || "medium",
+      systemCode: system,
       isPublic: isPublic === undefined ? true : !!isPublic,
       userId: req.user.id,
     });
@@ -47,25 +62,35 @@ async function create(req, res, next) {
 
 async function list(req, res, next) {
   try {
-    const { page = 1, pageSize = 20, status, type, priority } = req.query;
+    const { page = 1, pageSize = 20, status, type, priority, systemCode, creator, assignee } = req.query;
 
     let where = visibleWhere(req.user);
 
     if (status) where.status = status;
     if (type) where.type = type;
     if (priority) where.priority = priority;
+    // 所属系统：下拉筛选，精确匹配字典值
+    if (systemCode) where.systemCode = String(systemCode).trim();
 
     const { keyword } = req.query;
     if (keyword) {
       where.title = { [Op.like]: `%${keyword}%` };
     }
 
+    // 提交人/处理人：按姓名模糊查询（通过关联表条件过滤）
+    const creatorFilter = creator && String(creator).trim()
+      ? { realName: { [Op.like]: `%${String(creator).trim()}%` } } : null;
+    const assigneeFilter = assignee && String(assignee).trim()
+      ? { realName: { [Op.like]: `%${String(assignee).trim()}%` } } : null;
+
     const offset = (parseInt(page, 10) - 1) * parseInt(pageSize, 10);
     const { count, rows } = await Ticket.findAndCountAll({
       where,
       include: [
-        { model: User, as: "creator", attributes: ["id", "username", "realName"] },
-        { model: User, as: "assignee", attributes: ["id", "username", "realName"] },
+        { model: User, as: "creator", attributes: ["id", "username", "realName"],
+          ...(creatorFilter ? { where: creatorFilter, required: true } : {}) },
+        { model: User, as: "assignee", attributes: ["id", "username", "realName"],
+          ...(assigneeFilter ? { where: assigneeFilter, required: true } : {}) },
       ],
       // 排序：状态（待处理→处理中→已解决→已关闭）→ 优先级（高→中→低）→ 创建时间降序
       order: [

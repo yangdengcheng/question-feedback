@@ -23,7 +23,11 @@
           </div>
         </div>
 
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+        <div class="grid grid-cols-2 md:grid-cols-5 gap-4 text-sm">
+          <div>
+            <span class="text-ink-text-3">所属系统</span>
+            <p class="text-ink-text mt-1">{{ ticket.systemCode || "-" }}</p>
+          </div>
           <div>
             <span class="text-ink-text-3">优先级</span>
             <p class="text-ink-text mt-1">{{ priorityLabel }}</p>

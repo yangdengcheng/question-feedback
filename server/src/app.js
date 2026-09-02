@@ -10,6 +10,7 @@ const notificationRoutes = require("./routes/notifications");
 const adminRoutes = require("./routes/admin");
 const toolkitRoutes = require("./routes/toolkit");
 const workbenchRoutes = require("./routes/workbench");
+const dictRoutes = require("./routes/dicts");
 
 const app = express();
 
@@ -28,6 +29,7 @@ app.use("/api/notifications", notificationRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/toolkit", toolkitRoutes);
 app.use("/api/workbench", workbenchRoutes);
+app.use("/api/dicts", dictRoutes);
 
 app.use(errorHandler);
 

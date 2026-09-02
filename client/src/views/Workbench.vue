@@ -1,7 +1,7 @@
 <template>
   <div class="flex items-start gap-6">
-    <!-- 左栏：模糊搜索 + 访问排行 TOP10 -->
-    <aside class="w-64 shrink-0 flex flex-col gap-4">
+    <!-- 左栏：模糊搜索 + 访问排行 TOP15 -->
+    <aside class="w-[272px] shrink-0 flex flex-col gap-4">
       <el-input
         v-model="keyword"
         placeholder="搜索名称或 URL..."
@@ -15,12 +15,13 @@
         </div>
         <div v-else class="flex flex-col">
           <button
-            v-for="wb in topList"
+            v-for="(wb, idx) in topList"
             :key="wb.id"
             class="rank-item"
-            :title="wb.url"
             @click="openWorkbench(wb)"
           >
+            <img v-if="idx < 3" :src="rankIcons[idx]" class="rank-medal" :alt="`No.${idx + 1}`" />
+            <span v-else class="rank-num tnum">{{ idx + 1 }}</span>
             <span class="flex-1 min-w-0 truncate text-left">{{ wb.name }}</span>
             <span class="shrink-0 text-xs text-ink-text-3 tnum">{{ wb.visitCount || 0 }}次</span>
           </button>
@@ -58,10 +59,16 @@
 
       <!-- 卡片网格：一行三个 -->
       <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        <div
+        <LinkPreview
           v-for="wb in items"
           :key="wb.id"
-          class="panel panel-hover p-[10px] flex flex-col gap-3 cursor-pointer"
+          :url="wb.url"
+          :title="wb.name"
+          :width="420"
+          :height="260"
+        >
+        <div
+          class="panel panel-hover p-[10px] flex flex-col gap-3 cursor-pointer h-full"
           @click="openWorkbench(wb)"
         >
           <div class="flex items-center justify-between gap-2">
@@ -81,7 +88,7 @@
             </div>
           </div>
 
-          <p class="text-xs text-ink-text-2 tnum truncate" :title="wb.url">{{ wb.url }}</p>
+          <p class="text-xs text-ink-text-2 tnum truncate">{{ wb.url }}</p>
 
           <div
             class="text-xs text-ink-text-3 tnum mt-auto pt-2 border-t border-line flex items-center justify-between gap-2"
@@ -93,10 +100,11 @@
             </span>
           </div>
         </div>
+        </LinkPreview>
       </div>
 
       <!-- 极简分页：上一页 / 页码（点击可跳页）/ 下一页 -->
-      <div v-if="total > 0" class="flex items-center justify-end gap-2 mt-4 h-[26px]">
+      <div v-if="total > 0" class="flex items-center justify-end gap-2 mt-[5px] h-[26px]">
         <button
           class="pager-btn"
           :disabled="page <= 1"
@@ -209,6 +217,13 @@ import {
   updateWorkbench,
   deleteWorkbench,
 } from "../api/workbench";
+import LinkPreview from "../components/LinkPreview.vue";
+import rankNo1 from "../assets/rank/No1.svg";
+import rankNo2 from "../assets/rank/No2.svg";
+import rankNo3 from "../assets/rank/No3.svg";
+
+// 热度排行前三名奖牌图标（第 4 名起用纯数字）
+const rankIcons = [rankNo1, rankNo2, rankNo3];
 
 const authStore = useAuthStore();
 
@@ -226,7 +241,7 @@ const ROLE_OPTIONS = [
 const items = ref([]);
 const loading = ref(false);
 const page = ref(1);
-const pageSize = ref(12); // 四行三列
+const pageSize = ref(15); // 五行三列
 const total = ref(0);
 const totalPages = computed(() => Math.max(1, Math.ceil(total.value / pageSize.value)));
 
@@ -284,7 +299,7 @@ async function fetchList() {
   }
 }
 
-// 访问排行 TOP10
+// 访问排行 TOP15
 const topList = ref([]);
 async function fetchTop() {
   try {
@@ -489,9 +504,9 @@ onMounted(() => {
 .rank-item {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   width: 100%;
-  padding: 6px 8px;
+  padding: 6px 4px 6px 2px;
   border: none;
   border-radius: var(--radius-s);
   background: transparent;
@@ -503,6 +518,25 @@ onMounted(() => {
 .rank-item:hover {
   color: var(--accent-text);
   background: var(--accent-soft);
+}
+
+/* 排行前三名奖牌图标：与第 4 名起的数字占位对齐 */
+.rank-medal {
+  width: 18px;
+  height: 16px;
+  flex-shrink: 0;
+  object-fit: contain;
+}
+
+/* 第 4~15 名：纯数字序号 */
+.rank-num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  flex-shrink: 0;
+  font-size: 12px;
+  color: var(--text-3);
 }
 
 /* 标签 tab 栏：收紧 el-tabs 默认间距（header 默认下边距 15px，tab 左右内边距 20px） */
