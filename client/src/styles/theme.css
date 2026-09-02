@@ -63,6 +63,9 @@
   /* 固定列专用不透明底色（= 半透明表头/悬停色叠在面板色上的实色等价） */
   --table-header-bg-solid: #162032;
   --table-row-hover-bg-solid: #1c212b;
+  --row-unassigned-bg-solid: #292728;
+  --row-unassigned-bg-solid-hover: #3b3225;
+  --row-unassigned-bg-solid-stripe: #292728;
   --mask-bg: rgba(4, 8, 18, 0.7);
   --scrollbar-thumb: rgba(148, 163, 184, 0.22);
   --scrollbar-thumb-hover: rgba(148, 163, 184, 0.38);
@@ -137,6 +140,9 @@
   --table-header-bg: rgba(248, 250, 252, 0.9);
   --table-header-bg-solid: #f9fbfc;
   --table-row-hover-bg-solid: #fefcf5;
+  --row-unassigned-bg-solid: #fef5e7;
+  --row-unassigned-bg-solid-hover: #fdeed3;
+  --row-unassigned-bg-solid-stripe: #f8f1e4;
   --mask-bg: rgba(15, 23, 42, 0.4);
   --scrollbar-thumb: rgba(15, 23, 42, 0.18);
   --scrollbar-thumb-hover: rgba(15, 23, 42, 0.32);
@@ -648,6 +654,19 @@ input:-internal-autofill-selected {
 .el-table .el-table__body-wrapper tr.hover-row > td.el-table-fixed-column--left,
 .el-table .el-table__body-wrapper tr.hover-row > td.el-table-fixed-column--right {
   background-color: var(--table-row-hover-bg-solid);
+}
+/* 未分配工单行的琥珀高亮是半透明 + !important，固定列需实色等价，否则透出滚动层 */
+.el-table .el-table__body-wrapper tr.unassigned-row > td.el-table-fixed-column--left,
+.el-table .el-table__body-wrapper tr.unassigned-row > td.el-table-fixed-column--right {
+  background-color: var(--row-unassigned-bg-solid) !important;
+}
+.el-table .el-table__body-wrapper tr.unassigned-row:hover > td.el-table-fixed-column--left,
+.el-table .el-table__body-wrapper tr.unassigned-row:hover > td.el-table-fixed-column--right {
+  background-color: var(--row-unassigned-bg-solid-hover) !important;
+}
+.el-table--striped .el-table__body-wrapper tr.unassigned-row.el-table__row--striped > td.el-table-fixed-column--left,
+.el-table--striped .el-table__body-wrapper tr.unassigned-row.el-table__row--striped > td.el-table-fixed-column--right {
+  background-color: var(--row-unassigned-bg-solid-stripe) !important;
 }
 
 /* 分页 */
