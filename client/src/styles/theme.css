@@ -37,7 +37,6 @@
   --st-closed: #64748b;
 
   /* 字体 */
-  --font-disp: "Space Grotesk", "PingFang SC", "Microsoft YaHei", sans-serif;
   --font-body: "PingFang SC", "Microsoft YaHei", "Segoe UI", sans-serif;
   --font-mono: "JetBrains Mono", "SFMono-Regular", Consolas, monospace;
 
@@ -200,15 +199,10 @@ body {
 /* ============================ 排版 ============================ */
 
 h1, h2, h3, h4, h5, h6 {
-  font-family: var(--font-disp);
   letter-spacing: 0.01em;
 }
 
 @layer components {
-.font-disp {
-  font-family: var(--font-disp);
-}
-
 .font-mono,
 code, kbd, pre, samp {
   font-family: var(--font-mono);
@@ -701,7 +695,6 @@ input:-internal-autofill-selected {
   padding: 16px 20px;
 }
 .el-dialog__title {
-  font-family: var(--font-disp);
   font-weight: 600;
   color: var(--text);
 }
@@ -738,7 +731,6 @@ input:-internal-autofill-selected {
 }
 .el-message-box__title {
   color: var(--text);
-  font-family: var(--font-disp);
 }
 .el-message-box__content {
   color: var(--text-2);
