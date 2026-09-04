@@ -16,7 +16,7 @@ src/tray/
 ├── notify.html               通知画布页面入口（同上）
 ├── notify/                   通知画布的 Vue 源码（Element Plus 卡片）
 ├── target/                   Rust 编译缓存（不入库，勿手动改）
-└── release/                  成品分发目录（入库：保证拉代码即有可用 exe）
+└── release/                  成品分发目录（不入库，本地构建产出；线上用户从 TM 系统导航栏下载）
 ```
 
 ## 新开发环境搭建（一次性）
@@ -49,7 +49,7 @@ npm run tray:build   # 只编托盘（前提：dist 已存在）
 | --- | --- |
 | 原始 exe | `src/tray/target/release/tradematrix-tray.exe` |
 | NSIS 安装包 | `src/tray/target/release/bundle/nsis/*.exe` |
-| 分发副本 | `src/tray/release/TradeMatrixTray.exe`（**入库**，每次发版更新后重新提交） |
+| 分发副本 | `src/tray/release/TradeMatrixTray.exe`（不入库；发版时由部署脚本随 dist 一起上服务器作静态资源） |
 
 首次全量编译约 5-15 分钟（从零编几百个 Rust 依赖），之后增量编译 1-2 分钟。
 
