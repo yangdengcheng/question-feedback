@@ -6,7 +6,9 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "tray:build": "cd src/tray && npx tauri build",
+    "build:all": "npm run build && npm run tray:build"
   },
   "dependencies": {
     "@element-plus/icons-vue": "^2.3.2",
@@ -18,6 +20,7 @@
     "vue-router": "^4.6.4"
   },
   "devDependencies": {
+    "@tauri-apps/cli": "^2",
     "@vitejs/plugin-vue": "^6.0.7",
     "autoprefixer": "^10.5.4",
     "postcss": "^8.5.25",

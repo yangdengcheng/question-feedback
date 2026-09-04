@@ -43,6 +43,7 @@ async function notifyComment(ticket, comment, commenter) {
       ticketId: ticket.id,
       type: "new_comment",
       content: `${commenter.realName} 在工单 ${ticket.ticketNo} 中发表了新评论`,
+      commentId: comment.id,
     });
   }
   if (notifications.length > 0) {

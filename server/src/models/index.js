@@ -50,6 +50,8 @@ Notification.belongsTo(User, { foreignKey: "userId", as: "user" });
 // Ticket <-> Notification
 Ticket.hasMany(Notification, { foreignKey: "ticketId", as: "notifications" });
 Notification.belongsTo(Ticket, { foreignKey: "ticketId", as: "ticket" });
+// Comment <-> Notification（评论类通知带出评论正文与截图）
+Notification.belongsTo(Comment, { foreignKey: "commentId", as: "comment" });
 
 // Ticket <-> TicketLog
 Ticket.hasMany(TicketLog, { foreignKey: "ticketId", as: "logs" });

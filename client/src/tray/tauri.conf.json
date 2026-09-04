@@ -1,0 +1,28 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "TradeMatrixTray",
+  "version": "1.0.0",
+  "identifier": "com.tradematrix.tray",
+  "build": {
+    "frontendDist": "../../dist"
+  },
+  "app": {
+    "withGlobalTauri": true,
+    "windows": [],
+    "security": {
+      "csp": null
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": ["nsis"],
+    "icon": ["icons/icon.ico", "icons/icon.png"],
+    "category": "Business",
+    "shortDescription": "TradeMatrix 桌面托盘客户端",
+    "windows": {
+      "nsis": {
+        "installMode": "currentUser"
+      }
+    }
+  }
+}
