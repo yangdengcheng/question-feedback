@@ -484,6 +484,9 @@ mod win_focus {
         fn IsWindowVisible(hwnd: isize) -> i32;
         fn ShowWindow(hwnd: isize, nCmdShow: i32) -> i32;
         fn GetClassNameW(hwnd: isize, lpClassName: *mut u16, nMaxCount: i32) -> i32;
+        fn GetWindowTextW(hwnd: isize, lpString: *mut u16, nMaxCount: i32) -> i32;
+        fn BringWindowToTop(hwnd: isize) -> i32;
+        fn keybd_event(bvk: u8, bscan: u8, dwflags: u32, dwextrainfo: usize);
     }
 
     #[link(name = "kernel32")]
@@ -499,8 +502,12 @@ mod win_focus {
 
     const SW_RESTORE: i32 = 9;
     const PROCESS_QUERY_LIMITED_INFORMATION: u32 = 0x1000;
+    const VK_MENU: u8 = 0x12; // ALT 键
+    const KEYEVENTF_KEYUP: u32 = 0x0002;
 
     static FOUND: AtomicIsize = AtomicIsize::new(0);
+    /// 窗口模块调试日志（模块级共享；曾错写成函数内各自 static 导致读写两个存储、日志全空）
+    static LOGS: std::sync::Mutex<Option<Vec<String>>> = std::sync::Mutex::new(None);
 
     fn class_name(hwnd: isize) -> String {
         let mut buf = [0u16; 256];
@@ -537,8 +544,17 @@ mod win_focus {
         )
     }
 
+    fn window_title(hwnd: isize) -> String {
+        let mut buf = [0u16; 512];
+        let n = unsafe { GetWindowTextW(hwnd, buf.as_mut_ptr(), buf.len() as i32) };
+        if n <= 0 {
+            return String::new();
+        }
+        String::from_utf16_lossy(&buf[..n as usize])
+    }
+
     extern "system" fn enum_cb(hwnd: isize, _lparam: *mut c_void) -> i32 {
-        // 只要可见的（最小化窗口也满足 IsWindowVisible）
+        // 只要可见的（最小化窗口也满足 IsWindowVisible；rect 在 -32000 无妨，不做尺寸过滤）
         if unsafe { IsWindowVisible(hwnd) } == 0 {
             return 1;
         }
@@ -555,34 +571,118 @@ mod win_focus {
         if std::process::id() == pid {
             return 1;
         }
-        if !is_browser_process(&process_name(pid)) {
+        // 两条准入路径，命中任一即可：
+        // ① 进程名白名单（权限够、能查到进程名时）
+        // ② 窗口标题含 TM 标识（进程名查不到时的兜底——托盘是普通权限，
+        //    OpenProcess 查高保护浏览器进程可能拿不到名字导致全部漏选，
+        //    这正是"no browser window found"的根因）
+        let title = window_title(hwnd);
+        let title_hit = title.contains("TradeMatrix") || title.contains("TradeMatrix - ");
+        let proc_hit = is_browser_process(&process_name(pid));
+        if !proc_hit && !title_hit {
             return 1;
         }
-        // 挑窗口面积最大的那个候选（主窗口一般最大），存进 FOUND 由外层前置
-        FOUND.swap(hwnd, Ordering::SeqCst);
+        // 挑窗口面积最大的候选（最小化窗口 rect=-32000 面积算负数不会当选，
+        // 但如果全是最小化窗口则面积全是"负"，取负得最多的=实际最大的那个也行）
+        let prev = FOUND.load(Ordering::SeqCst);
+        if prev == 0 || window_area(hwnd) > window_area(prev) {
+            FOUND.store(hwnd, Ordering::SeqCst);
+        }
         1
     }
 
+    fn window_area(hwnd: isize) -> i64 {
+        #[repr(C)]
+        struct Rect {
+            left: i32,
+            top: i32,
+            right: i32,
+            bottom: i32,
+        }
+        extern "system" {
+            fn GetWindowRect(hwnd: isize, lprect: *mut Rect) -> i32;
+        }
+        let mut rc = Rect { left: 0, top: 0, right: 0, bottom: 0 };
+        unsafe { GetWindowRect(hwnd, &mut rc) };
+        let w = (rc.right - rc.left).max(0) as i64;
+        let h = (rc.bottom - rc.top).max(0) as i64;
+        w * h
+    }
+
     /// 遍历所有顶层窗口找浏览器窗口并前置（最小化先恢复）
-    pub fn focus_browser() {
+    /// 前台锁解法：SetForegroundWindow 只允许"有用户交互的进程"抢前台，
+    /// 后台进程直接调会被静默拒绝（浏览器已开 TM 页但最小化时唤不动的根因）。
+    /// 标准三板斧：①最小化先 SW_RESTORE ②模拟一次 ALT 键按下抬起（系统认为
+    /// 有键盘交互，解锁前台锁）③SetForegroundWindow + BringWindowToTop 双保险。
+    /// dbg：把每步结果写进 /dbg 日志（唤起失败时定位卡在哪一环）。
+    pub fn focus_browser_dbg(tag: &str) {
         FOUND.store(0, Ordering::SeqCst);
         unsafe { EnumWindows(enum_cb, std::ptr::null_mut()) };
         let h = FOUND.load(Ordering::SeqCst);
         if h == 0 {
+            dbg_global(&format!("focus[{tag}]: no browser window found"));
             return;
         }
         unsafe {
-            if IsIconic(h) != 0 {
+            let iconic = IsIconic(h) != 0;
+            if iconic {
                 ShowWindow(h, SW_RESTORE);
             }
-            SetForegroundWindow(h);
+            // 模拟 ALT 击键解锁前台锁（对用户唯一影响：无副作用的单次按键）
+            keybd_event(VK_MENU, 0, 0, 0);
+            keybd_event(VK_MENU, 0, KEYEVENTF_KEYUP, 0);
+            let ok = SetForegroundWindow(h);
+            if ok == 0 {
+                // 前台锁没解开时的兜底：BringWindowToTop 至少把窗口拉到 Z 序顶
+                BringWindowToTop(h);
+            }
+            dbg_global(&format!(
+                "focus[{tag}]: hwnd={h} iconic={iconic} setfg={ok} proc={} title={}",
+                process_name_of_hwnd(h),
+                window_title(h)
+            ));
         }
+    }
+
+    fn process_name_of_hwnd(hwnd: isize) -> String {
+        let mut pid = 0u32;
+        unsafe { GetWindowThreadProcessId(hwnd, &mut pid) };
+        if pid == 0 {
+            return "?".to_string();
+        }
+        process_name(pid)
+    }
+
+    /// 全局调试日志（窗口模块没 AppHandle，写进模块级 LOGS，/dbg 请求时收编）
+    fn dbg_global(msg: &str) {
+        if let Ok(mut guard) = LOGS.lock() {
+            guard.get_or_insert_with(Vec::new).push(format!("[win] {msg}"));
+        }
+    }
+
+    /// 取走积压的窗口模块日志（/dbg 端点收编用）
+    pub fn drain_logs() -> Vec<String> {
+        let mut out = Vec::new();
+        if let Ok(mut guard) = LOGS.lock() {
+            if let Some(v) = guard.as_mut() {
+                out = std::mem::take(v);
+            }
+        }
+        out
+    }
+
+    pub fn focus_browser() {
+        focus_browser_dbg("default");
     }
 }
 
 #[cfg(not(windows))]
 mod win_focus {
     pub fn focus_browser() {}
+    pub fn focus_browser_dbg(_tag: &str) {}
+    pub fn drain_logs() -> Vec<String> {
+        Vec::new()
+    }
 }
 
 /// 唤起浏览器窗口（Win32 兜底，页面 window.focus 被浏览器拦截时靠它）
@@ -788,6 +888,10 @@ fn handle_conn(mut stream: TcpStream, app: tauri::AppHandle) {
         ("GET", "/ping") => respond(&mut stream, "200 OK", "{\"ok\":true}"),
         ("GET", "/dbg") => {
             let state = app.state::<Arc<AppState>>();
+            // 先收编窗口模块积压的日志（focus_browser_dbg 写在全局 Vec）
+            for line in win_focus::drain_logs() {
+                state.dbg.lock().unwrap().push(line);
+            }
             let lines: Vec<String> = state.dbg.lock().unwrap().drain(..).collect();
             let body = serde_json::to_string(&lines).unwrap_or_else(|_| "[]".to_string());
             respond(&mut stream, "200 OK", &body);
@@ -963,7 +1067,7 @@ fn focus_or_open(app: &tauri::AppHandle) {
     };
     if has_peers {
         broadcast_ws(app, "{\"type\":\"focus\"}");
-        focus_browser_window();
+        win_focus::focus_browser_dbg("tray-click");
         return;
     }
     {
@@ -971,7 +1075,7 @@ fn focus_or_open(app: &tauri::AppHandle) {
         if let Some(t) = *last {
             if t.elapsed() < OPEN_COOLDOWN {
                 // 冷却期内：刚开过浏览器，大概率还在启动中，只尝试唤起不再开新 tab
-                focus_browser_window();
+                win_focus::focus_browser_dbg("tray-click-cooldown");
                 return;
             }
         }
@@ -1048,7 +1152,7 @@ fn open_ticket(app: tauri::AppHandle, ticket: serde_json::Value) {
             "path": path,
         });
         broadcast_ws(&app, &msg.to_string());
-        focus_browser_window();
+        win_focus::focus_browser_dbg("ticket-navigate");
         return;
     }
     {
