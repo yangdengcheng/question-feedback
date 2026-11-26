@@ -1,4 +1,4 @@
-const { Notification, Ticket, Comment, Attachment } = require("../models");
+const { Notification, Ticket, Comment, Attachment, User } = require("../models");
 
 async function list(req, res, next) {
   try {
@@ -14,7 +14,10 @@ async function list(req, res, next) {
           model: Comment,
           as: "comment",
           attributes: ["id", "content"],
-          include: [{ model: Attachment, as: "attachments", attributes: ["id", "filePath", "fileName", "fileType"] }],
+          include: [
+            { model: Attachment, as: "attachments", attributes: ["id", "filePath", "fileName", "fileType"] },
+            { model: User, as: "author", attributes: ["id", "realName"] },
+          ],
         },
       ],
       order: [["createdAt", "DESC"]],

@@ -39,11 +39,15 @@ export function initTraySocket() {
       if (type === "focus") {
         window.focus();
         sendAuthStatus(); // 点托盘时若页面已退出登录，托盘会补发登录态
+      } else if (type === "navigate" && msg?.path) {
+        // 托盘点通知卡片：复用当前 tab 路由跳转到对应工单，不开新页签
+        window.focus();
+        router.push(msg.path).catch(() => {});
       } else if (type === "auth" && msg?.token && msg?.user) {
+        // 托盘是登录态权威源：无条件应用，覆盖浏览器本地缓存里的旧登录态
+        // （托盘中切换账号后，已打开的页面也要跟着切到新账号）
         const authStore = useAuthStore();
-        if (authStore.token !== msg.token) {
-          authStore.applyExternalAuth({ token: msg.token, user: msg.user });
-        }
+        authStore.applyExternalAuth({ token: msg.token, user: msg.user });
         const path = router.currentRoute.value.path;
         if (path === "/login" || path === "/register") {
           router.push("/");
