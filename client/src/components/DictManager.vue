@@ -27,8 +27,8 @@
         </template>
         <template v-else>
           <span class="text-sm text-ink-text w-32 truncate">{{ item.name }}</span>
-          <span class="badge tnum">{{ item.code }}</span>
-          <span class="text-xs text-ink-text-3 tnum">排序 {{ item.sort }}</span>
+          <span class="badge">{{ item.code }}</span>
+          <span class="text-xs text-ink-text-3">排序 {{ item.sort }}</span>
           <div class="ml-auto flex items-center gap-3">
             <el-switch
               :model-value="item.isActive"

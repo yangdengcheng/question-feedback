@@ -1,4 +1,4 @@
-const { Notification, Ticket } = require("../models");
+const { Notification, Ticket, Comment, Attachment, User } = require("../models");
 
 async function list(req, res, next) {
   try {
@@ -8,7 +8,18 @@ async function list(req, res, next) {
     if (req.query.unread === "true") where.isRead = false;
     const { count, rows } = await Notification.findAndCountAll({
       where,
-      include: [{ model: Ticket, as: "ticket", attributes: ["id", "ticketNo", "title"] }],
+      include: [
+        { model: Ticket, as: "ticket", attributes: ["id", "ticketNo", "title"] },
+        {
+          model: Comment,
+          as: "comment",
+          attributes: ["id", "content"],
+          include: [
+            { model: Attachment, as: "attachments", attributes: ["id", "filePath", "fileName", "fileType"] },
+            { model: User, as: "author", attributes: ["id", "realName"] },
+          ],
+        },
+      ],
       order: [["createdAt", "DESC"]],
       limit: parseInt(pageSize, 10), offset,
     });

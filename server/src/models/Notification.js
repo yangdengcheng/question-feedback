@@ -9,6 +9,7 @@ const Notification = sequelize.define(
     ticketId: { type: DataTypes.INTEGER, allowNull: false, field: "ticket_id" },
     type: { type: DataTypes.ENUM("new_ticket", "new_comment", "status_change", "assigned"), allowNull: false },
     content: { type: DataTypes.STRING(500), allowNull: false },
+    commentId: { type: DataTypes.INTEGER, allowNull: true, field: "comment_id" },
     isRead: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false, field: "is_read" },
     readAt: { type: DataTypes.DATE, allowNull: true, field: "read_at" },
   },

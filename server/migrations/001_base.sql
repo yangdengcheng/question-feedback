@@ -13,6 +13,8 @@ CREATE TABLE IF NOT EXISTS users (
   email      VARCHAR(100) NULL COMMENT '邮箱',
   role       ENUM('customer','data_maintenance','dev_lead','developer','tester','admin') NOT NULL DEFAULT 'customer' COMMENT '角色',
   is_active  TINYINT(1)   NOT NULL DEFAULT 1 COMMENT '启用状态',
+  last_active_at DATETIME NULL COMMENT '最后活跃时间（认证心跳刷新，在线判定用）',
+  last_login_time DATETIME NULL COMMENT '最后登录时间（仅登录成功时写入）',
   created_at DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='用户表';

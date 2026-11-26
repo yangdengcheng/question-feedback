@@ -22,7 +22,7 @@
             <span class="text-sm text-ink-text-2">{{ card.label }}</span>
             <span class="w-2.5 h-2.5 rounded-full" :class="card.dot"></span>
           </div>
-          <p class="text-3xl font-bold tnum" :class="card.color">
+          <p class="text-3xl font-bold" :class="card.color">
             {{ stats.byStatus[card.key] }}
           </p>
         </div>
@@ -41,11 +41,11 @@
             :to="`/tickets/${t.id}`"
             class="flex items-center gap-4 py-3 px-2 rounded-lg hover:bg-accent-soft transition-colors"
           >
-            <span class="text-xs text-ink-text-3 font-mono tnum w-36 shrink-0">{{ t.ticketNo }}</span>
+            <span class="text-xs text-ink-text-3 w-36 shrink-0">{{ t.ticketNo }}</span>
             <span class="flex-1 text-sm text-ink-text truncate">{{ t.title }}</span>
             <el-tag size="small" :type="typeTagType(t.type)">{{ typeLabel(t.type) }}</el-tag>
             <StatusBadge :status="t.status" />
-            <span class="text-xs text-ink-text-3 tnum w-24 text-right shrink-0">{{ formatTime(t.updatedAt) }}</span>
+            <span class="text-xs text-ink-text-3 w-24 text-right shrink-0">{{ formatTime(t.updatedAt) }}</span>
           </router-link>
         </div>
       </div>

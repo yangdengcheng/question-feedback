@@ -14,7 +14,7 @@
         <div class="flex items-start justify-between mb-4">
           <div>
             <div class="flex items-center gap-3 mb-2">
-              <span class="text-xs text-ink-text-3 tnum">{{ ticket.ticketNo }}</span>
+              <span class="text-xs text-ink-text-3">{{ ticket.ticketNo }}</span>
               <el-tag size="small" effect="light" :type="ticket.isPublic ? 'success' : 'danger'">{{ ticket.isPublic ? "公开" : "非公开" }}</el-tag>
               <el-tag size="small" effect="plain" :type="typeTagType">{{ typeLabel }}</el-tag>
               <StatusBadge :status="ticket.status" />
@@ -42,7 +42,7 @@
           </div>
           <div>
             <span class="text-ink-text-3">创建时间</span>
-            <p class="text-ink-text mt-1 tnum">{{ formatTime(ticket.createdAt) }}</p>
+            <p class="text-ink-text mt-1">{{ formatTime(ticket.createdAt) }}</p>
           </div>
         </div>
 

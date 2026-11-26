@@ -40,8 +40,9 @@
       </p>
     </div>
 
-    <!-- 卡片网格 -->
-    <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+    <!-- 卡片网格：固定高度内部滚动，页面不出纵向滚动条 -->
+    <div v-else class="grid-scroll-wrap">
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
       <router-link
         v-for="pkg in packages"
         :key="pkg.id"
@@ -50,33 +51,21 @@
       >
         <div class="flex items-start justify-between gap-2">
           <h3 class="text-base font-semibold text-ink-text leading-snug">{{ pkg.name }}</h3>
-          <span v-if="pkg.currentVersion" class="badge tnum shrink-0">v{{ pkg.currentVersion.version }}</span>
+          <span v-if="pkg.currentVersion" class="badge shrink-0">v{{ pkg.currentVersion.version }}</span>
         </div>
         <div class="flex items-center gap-2 flex-wrap">
           <span class="badge">{{ pkg.province?.name }}</span>
           <span class="badge">{{ pkg.category?.name }}</span>
         </div>
         <p class="text-sm text-ink-text-2 line-clamp-2 min-h-[40px]">{{ pkg.summary || "暂无简介" }}</p>
-        <div class="text-xs text-ink-text-3 tnum mt-auto pt-2 border-t border-line flex items-center justify-between gap-2">
+        <div class="text-xs text-ink-text-3 mt-auto pt-2 border-t border-line flex items-center justify-between gap-2">
           <span>更新于 {{ formatTime(pkg.updatedAt) }}</span>
           <span class="inline-flex items-center gap-1 shrink-0" :title="`下载量 ${pkg.downloads || 0}`">
             <el-icon :size="14"><Download /></el-icon>{{ pkg.downloads || 0 }}
           </span>
         </div>
       </router-link>
-    </div>
-
-    <!-- 分页 -->
-    <div v-if="total > 0" class="flex justify-center mt-8">
-      <el-pagination
-        v-model:current-page="page"
-        v-model:page-size="pageSize"
-        :page-sizes="[12, 24, 48]"
-        :total="total"
-        layout="total, sizes, prev, pager, next"
-        @current-change="fetchPackages"
-        @size-change="handleSizeChange"
-      />
+      </div>
     </div>
 
     <!-- 字典管理弹窗 -->
@@ -157,36 +146,28 @@ async function fetchDicts() {
 // 列表
 const packages = ref([]);
 const loading = ref(false);
-const page = ref(1);
-const pageSize = ref(12);
-const total = ref(0);
 const keyword = ref("");
 const filters = reactive({ provinceId: "", categoryId: "" });
 
 let searchTimer = null;
 function handleSearch() {
   clearTimeout(searchTimer);
-  searchTimer = setTimeout(() => { page.value = 1; fetchPackages(); }, 300);
+  searchTimer = setTimeout(() => fetchPackages(), 300);
 }
 function handleFilterChange() {
-  page.value = 1;
-  fetchPackages();
-}
-function handleSizeChange() {
-  page.value = 1;
   fetchPackages();
 }
 
 async function fetchPackages() {
   loading.value = true;
   try {
-    const params = { page: page.value, pageSize: pageSize.value };
+    // 不分页：后端 pageSize 上限 100，工具包数量远小于此，一次拉全量
+    const params = { page: 1, pageSize: 100 };
     if (keyword.value) params.keyword = keyword.value;
     if (filters.provinceId) params.provinceId = filters.provinceId;
     if (filters.categoryId) params.categoryId = filters.categoryId;
     const data = await listPackages(params);
     packages.value = data.rows || [];
-    total.value = data.count || 0;
   } catch (e) { /* 拦截器已处理 */ } finally {
     loading.value = false;
   }
@@ -249,3 +230,14 @@ onMounted(() => {
   fetchPackages();
 });
 </script>
+
+<style scoped>
+/* 卡片网格固定高度，内部出纵向滚动条，页面本身不滚动；
+   250px = 顶部导航 60 + main 上边距 32 + 标题行 52 + 筛选区 88 + main 下边距 8 + 余量 10 */
+.grid-scroll-wrap {
+  height: calc(100vh - 250px);
+  min-height: 280px;
+  overflow-y: auto;
+  padding: 4px;
+}
+</style>

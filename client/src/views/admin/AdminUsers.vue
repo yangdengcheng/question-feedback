@@ -35,7 +35,7 @@
           </template>
         </el-table-column>
         <el-table-column label="最后登录时间" width="170" align="center">
-          <template #default="{ row }">{{ formatTime(row.lastActiveAt) || "-" }}</template>
+          <template #default="{ row }">{{ formatTime(row.lastLoginAt) || "-" }}</template>
         </el-table-column>
         <el-table-column label="注册时间" width="170" align="center">
           <template #default="{ row }">{{ formatTime(row.createdAt) }}</template>

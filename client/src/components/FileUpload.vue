@@ -7,7 +7,7 @@
         <button type="button" class="btn-ghost fu-attach">
           <el-icon><Paperclip /></el-icon>
           附件
-          <span v-if="fileList.length" class="tnum fu-attach__count">{{ fileList.length }}</span>
+          <span v-if="fileList.length" class="fu-attach__count">{{ fileList.length }}</span>
         </button>
       </el-upload>
 

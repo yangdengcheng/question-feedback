@@ -2,6 +2,7 @@ import { defineStore } from "pinia";
 import { ref } from "vue";
 import router from "../router";
 import * as notificationApi from "../api/notifications";
+import { isTrayConnected } from "../utils/traySocket";
 
 export const useNotificationStore = defineStore("notification", () => {
   const unreadCount = ref(0);
@@ -26,7 +27,7 @@ export const useNotificationStore = defineStore("notification", () => {
             // 后续拉取：对未见过的新通知弹浏览器提醒
             const newItems = unreadItems.filter(n => !seenIds.has(n.id));
             for (const n of newItems.slice(0, 3)) {
-              showBrowserNotification(n);
+              await showBrowserNotification(n);
               seenIds.add(n.id);
             }
           }
@@ -36,7 +37,38 @@ export const useNotificationStore = defineStore("notification", () => {
     } catch (error) { /* silent */ }
   }
 
-  function showBrowserNotification(notification) {
+  // 桌面托盘程序本地通知服务：把通知推给托盘，由托盘用 Element Plus 卡片弹系统级通知。
+  // 托盘在运行（WS 已连接）→ 只走托盘，不弹浏览器通知；托盘未运行 → 回退浏览器原生通知。
+  async function pushToTray(notification) {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 1500);
+    try {
+      const res = await fetch("http://127.0.0.1:21333/notify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+        id: notification.id,
+        content: notification.content,
+        ticketId: notification.ticketId,
+        type: notification.type,
+        comment: notification.comment?.content ?? null,
+        images: (notification.comment?.attachments || []).map((a) => a.filePath).filter(Boolean),
+      }),
+        signal: ctrl.signal,
+      });
+      return res.ok;
+    } catch (_) {
+      return false;
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+
+  async function showBrowserNotification(notification) {
+    if (isTrayConnected()) {
+      await pushToTray(notification);
+      return;
+    }
     if (!("Notification" in window) || Notification.permission !== "granted") return;
     const n = new Notification("TradeMatrix", {
       body: notification.content,

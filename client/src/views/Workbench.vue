@@ -21,9 +21,9 @@
             @click="openWorkbench(wb)"
           >
             <img v-if="idx < 3" :src="rankIcons[idx]" class="rank-medal" :alt="`No.${idx + 1}`" />
-            <span v-else class="rank-num tnum">{{ idx + 1 }}</span>
+            <span v-else class="rank-num">{{ idx + 1 }}</span>
             <span class="flex-1 min-w-0 truncate text-left">{{ wb.name }}</span>
-            <span class="shrink-0 text-xs text-ink-text-3 tnum">{{ wb.visitCount || 0 }}次</span>
+            <span class="shrink-0 text-xs text-ink-text-3">{{ wb.visitCount || 0 }}次</span>
           </button>
         </div>
       </div>
@@ -74,7 +74,7 @@
           <div class="flex items-center justify-between gap-2">
             <div class="flex items-center gap-2 min-w-0">
               <span v-if="wb.tag" class="tag-chip shrink-0" :title="wb.tag">{{ wb.tag }}</span>
-              <h3 class="text-sm font-semibold text-ink-text truncate tnum">
+              <h3 class="text-sm font-semibold text-ink-text truncate">
                 {{ wb.name }}
               </h3>
             </div>
@@ -88,15 +88,15 @@
             </div>
           </div>
 
-          <p class="text-xs text-ink-text-2 tnum truncate">{{ wb.url }}</p>
+          <p class="text-xs text-ink-text-2 truncate">{{ wb.url }}</p>
 
           <div
-            class="text-xs text-ink-text-3 tnum mt-auto pt-2 border-t border-line flex items-center justify-between gap-2"
+            class="text-xs text-ink-text-3 mt-auto pt-2 border-t border-line flex items-center justify-between gap-2"
           >
             <span class="truncate">{{ wb.creator?.realName || "-" }} {{ formatTime(wb.createdAt) }}</span>
             <span class="shrink-0 flex items-center gap-1 text-ink-text-3">
               <el-icon :size="14"><View /></el-icon>
-              <span class="tnum">{{ wb.visitCount || 0 }}</span>
+              <span>{{ wb.visitCount || 0 }}</span>
             </span>
           </div>
         </div>
@@ -116,7 +116,7 @@
 
         <div
           v-if="!jumping"
-          class="pager-label tnum"
+          class="pager-label"
           title="点击跳转到指定页"
           @click="startJump"
         >
@@ -126,7 +126,7 @@
           v-else
           ref="jumpInputRef"
           v-model="jumpValue"
-          class="pager-input tnum"
+          class="pager-input"
           inputmode="numeric"
           maxlength="3"
           @input="jumpValue = jumpValue.replace(/\D/g, '')"

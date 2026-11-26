@@ -19,7 +19,7 @@
           <div class="flex items-center gap-2 mt-2 flex-wrap">
             <span class="badge">{{ pkg.province?.name }}</span>
             <span class="badge">{{ pkg.category?.name }}</span>
-            <span v-if="pkg.currentVersion" class="badge tnum">最新版本 v{{ pkg.currentVersion.version }}</span>
+            <span v-if="pkg.currentVersion" class="badge">最新版本 v{{ pkg.currentVersion.version }}</span>
           </div>
         </div>
 
@@ -62,7 +62,7 @@
               </div>
               <div class="flex justify-between">
                 <dt class="text-ink-text-3">最新版本</dt>
-                <dd class="text-ink-text tnum">{{ pkg.currentVersion ? `v${pkg.currentVersion.version}` : "尚未发布" }}</dd>
+                <dd class="text-ink-text">{{ pkg.currentVersion ? `v${pkg.currentVersion.version}` : "尚未发布" }}</dd>
               </div>
               <div class="flex justify-between">
                 <dt class="text-ink-text-3">创建人</dt>
@@ -70,7 +70,7 @@
               </div>
               <div class="flex justify-between">
                 <dt class="text-ink-text-3">更新时间</dt>
-                <dd class="text-ink-text tnum">{{ formatTime(pkg.updatedAt) }}</dd>
+                <dd class="text-ink-text">{{ formatTime(pkg.updatedAt) }}</dd>
               </div>
             </dl>
             <button
@@ -90,7 +90,7 @@
             <div v-else class="space-y-4">
               <div v-for="ver in versions" :key="ver.id" class="border-l-2 border-line pl-3">
                 <div class="flex items-center justify-between gap-2">
-                  <span class="text-sm font-semibold text-ink-text tnum">v{{ ver.version }}</span>
+                  <span class="text-sm font-semibold text-ink-text">v{{ ver.version }}</span>
                   <div class="flex items-center gap-3 shrink-0">
                     <button class="text-xs text-accent-text hover:underline inline-flex items-center gap-1" @click="downloadVer(ver)">
                       <el-icon :size="12"><Download /></el-icon>下载
@@ -104,11 +104,11 @@
                     </button>
                   </div>
                 </div>
-                <p v-if="ver.fileName" class="text-xs text-ink-text-3 mt-1 truncate font-mono" :title="ver.fileName">
+                <p v-if="ver.fileName" class="text-xs text-ink-text-3 mt-1 truncate" :title="ver.fileName">
                   {{ ver.fileName }}
                 </p>
                 <p v-if="ver.releaseNote" class="text-xs text-ink-text-2 mt-1 whitespace-pre-wrap">{{ ver.releaseNote }}</p>
-                <p class="text-xs text-ink-text-3 tnum mt-1">{{ formatTime(ver.createdAt) }} · {{ ver.creator?.realName || "" }}</p>
+                <p class="text-xs text-ink-text-3 mt-1">{{ formatTime(ver.createdAt) }} · {{ ver.creator?.realName || "" }}</p>
               </div>
             </div>
           </div>

@@ -63,5 +63,14 @@ export const useAuthStore = defineStore("auth", () => {
     }
   }
 
-  return { user, token, isLoggedIn, isAdmin, canAccessAdmin, isInternal, isMaintainer, login, register, logout, fetchMe };
+  // 托盘等外部程序下发的登录态：写入 localStorage 实现免二次登录
+  function applyExternalAuth({ token: newToken, user: newUser }) {
+    if (!newToken) return;
+    token.value = newToken;
+    user.value = newUser || null;
+    localStorage.setItem("token", newToken);
+    localStorage.setItem("user", JSON.stringify(newUser || null));
+  }
+
+  return { user, token, isLoggedIn, isAdmin, canAccessAdmin, isInternal, isMaintainer, login, register, logout, fetchMe, applyExternalAuth };
 });
