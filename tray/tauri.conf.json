@@ -4,7 +4,7 @@
   "version": "1.0.0",
   "identifier": "com.tradematrix.tray",
   "build": {
-    "frontendDist": "../../dist"
+    "frontendDist": "./ui-dist"
   },
   "app": {
     "withGlobalTauri": true,

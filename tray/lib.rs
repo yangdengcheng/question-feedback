@@ -3,6 +3,7 @@ use std::io::{Read, Write};
 use std::net::{TcpListener, TcpStream};
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
+use std::time::Instant;
 
 use serde::{Deserialize, Serialize};
 use tauri::{
@@ -137,7 +138,24 @@ extern "system" {
     fn CombineRgn(hrgndst: isize, hrgnsrc1: isize, hrgnsrc2: isize, mode: i32) -> i32;
     fn SetWindowRgn(hwnd: isize, hrgn: isize, bredraw: i32) -> i32;
     fn DeleteObject(h: isize) -> i32;
+    // 白条问题：关闭 notify 窗口（含 WebView2 子窗口）的 DWM 非客户区渲染用
+    fn DwmSetWindowAttribute(
+        hwnd: isize,
+        attr: u32,
+        value: *const std::ffi::c_void,
+        size: u32,
+    ) -> i32;
+    fn EnumChildWindows(
+        parent: isize,
+        cb: Option<unsafe extern "system" fn(isize, isize) -> i32>,
+        lparam: isize,
+    ) -> i32;
 }
+
+/// DWMWINDOWATTRIBUTE：DWMWA_NCRENDERING_ENABLED=1 只读；设置要用
+/// DWMWA_NCRENDERING_POLICY=2，值 DWMNCRP_DISABLED=1（禁用 NC 渲染）
+const DWMWA_NCRENDERING_POLICY: u32 = 2;
+const DWMNCRP_DISABLED: i32 = 1;
 
 const RGN_OR: i32 = 2;
 
@@ -334,6 +352,46 @@ fn configure_tm_url(app: tauri::AppHandle, tm_url: String) -> Result<(), String>
     Ok(())
 }
 
+/// 白条防护：给 notify 顶层窗口 + 全部子窗口（WebView2 渲染宿主等）关
+/// DWM 非客户区渲染。上一版只关顶层白条仍在，说明画白条的是 WebView2
+/// 子窗口自己的 NC 顶边（mousedown 命中卡片 → 子窗口激活切换 → 子窗口
+/// NC 边框被画出来）。EnumChildWindows 逐个关，cb 里递归后代层级。
+/// 注意：不要在这里子类化窗口（SetWindowLongPtrW）——跨线程换 wndproc
+/// 轻则弄坏托盘事件链重则崩溃（11-26 踩坑两次）。
+#[tauri::command]
+fn install_nc_guard(app: tauri::AppHandle) {
+    let title: Vec<u16> = "TradeMatrixNotify".encode_utf16().chain([0]).collect();
+    let hwnd = unsafe { FindWindowW(std::ptr::null(), title.as_ptr()) };
+    if hwnd == 0 {
+        dbg_log(&app, "nc guard: window not found".to_string());
+        return;
+    }
+    unsafe {
+        let policy: i32 = DWMNCRP_DISABLED;
+        let hr = DwmSetWindowAttribute(
+            hwnd,
+            DWMWA_NCRENDERING_POLICY,
+            &policy as *const i32 as *const std::ffi::c_void,
+            std::mem::size_of::<i32>() as u32,
+        );
+        let _ = EnumChildWindows(hwnd, Some(child_nc_cb), 0);
+        dbg_log(&app, format!("nc guard top hr={hr}"));
+    }
+}
+
+/// 递归关子窗口 NC 渲染
+unsafe extern "system" fn child_nc_cb(h: isize, _l: isize) -> i32 {
+    let policy: i32 = DWMNCRP_DISABLED;
+    let _ = DwmSetWindowAttribute(
+        h,
+        DWMWA_NCRENDERING_POLICY,
+        &policy as *const i32 as *const std::ffi::c_void,
+        std::mem::size_of::<i32>() as u32,
+    );
+    let _ = EnumChildWindows(h, Some(child_nc_cb), 0);
+    1
+}
+
 /// 点击区域裁剪：页面量出当前通知卡片的包围盒，Rust 侧把窗口点击/绘制区域
 /// 设为这些矩形之并集——卡片外（透明部分）点击穿透到桌面，卡片内可交互。
 /// rects 为空 → 清除区域并整窗穿透（空闲态）。
@@ -352,7 +410,14 @@ fn set_clip_region(app: tauri::AppHandle, rects: Vec<(i32, i32, i32, i32)>) {
     let scale = w.scale_factor().unwrap_or(1.0);
     unsafe {
         if rects.is_empty() {
-            SetWindowRgn(hwnd, 0, 1);
+            // 空闲时保留 1x1 透明像素的 region（不能用 NULL/零区域）：
+            // region 归零时 DWM 会把窗口从合成树剔除，首张卡片把 region 撑起来时
+            // 窗口要重新入树（重配合成资源/重传纹理），过渡瞬间闪半透明。
+            // 保留 1px 让窗口永远留在合成树里，首卡只是 region 变大，无重新入树。
+            let keepalive = CreateRectRgn(0, 0, 1, 1);
+            if keepalive != 0 {
+                SetWindowRgn(hwnd, keepalive, 0);
+            }
             return;
         }
         let mut combined = 0isize;
@@ -375,7 +440,8 @@ fn set_clip_region(app: tauri::AppHandle, rects: Vec<(i32, i32, i32, i32)>) {
         }
         if combined != 0 {
             // 成功后区域归系统所有，不能再 DeleteObject
-            SetWindowRgn(hwnd, combined, 1);
+            // bRedraw=0：不强制整窗重绘，避免首卡出现时合成切换闪烁
+            SetWindowRgn(hwnd, combined, 0);
         }
     }
 }
@@ -395,6 +461,133 @@ fn mark_seen(state: &AppState, id: &str) -> bool {
 
 fn open_in_browser(url: &str) {
     let _ = open::that(url);
+}
+
+// ---------------- Win32 唤起浏览器窗口 ----------------
+// 页面侧 window.focus() 会被浏览器安全策略拦截（后台 tab 无用户激活不允许前台），
+// 这里直接找浏览器顶层窗口强制前置。FFI 声明零新依赖。
+// 注意：Chrome_WidgetWin_1 是 Chromium 全系通用类名，WebView2（托盘自己）也是它，
+// 所以必须 EnumWindows 遍历 + 按进程名过滤，FindWindowW 只拿第一个会命中错误窗口。
+#[cfg(windows)]
+mod win_focus {
+    #![allow(non_snake_case)]
+
+    use std::ffi::c_void;
+    use std::sync::atomic::{AtomicIsize, Ordering};
+
+    #[link(name = "user32")]
+    extern "system" {
+        fn EnumWindows(lpEnumFunc: extern "system" fn(isize, *mut c_void) -> i32, lparam: *mut c_void) -> i32;
+        fn GetWindowThreadProcessId(hwnd: isize, lpdwProcessId: *mut u32) -> u32;
+        fn SetForegroundWindow(hwnd: isize) -> i32;
+        fn IsIconic(hwnd: isize) -> i32;
+        fn IsWindowVisible(hwnd: isize) -> i32;
+        fn ShowWindow(hwnd: isize, nCmdShow: i32) -> i32;
+        fn GetClassNameW(hwnd: isize, lpClassName: *mut u16, nMaxCount: i32) -> i32;
+    }
+
+    #[link(name = "kernel32")]
+    extern "system" {
+        fn OpenProcess(dwDesiredAccess: u32, bInheritHandle: i32, dwProcessId: u32) -> isize;
+        fn CloseHandle(hObject: isize) -> i32;
+    }
+
+    #[link(name = "psapi")]
+    extern "system" {
+        fn GetModuleBaseNameW(hProcess: isize, lpBaseAddress: *const c_void, lpBaseName: *mut u16, nSize: u32) -> u32;
+    }
+
+    const SW_RESTORE: i32 = 9;
+    const PROCESS_QUERY_LIMITED_INFORMATION: u32 = 0x1000;
+
+    static FOUND: AtomicIsize = AtomicIsize::new(0);
+
+    fn class_name(hwnd: isize) -> String {
+        let mut buf = [0u16; 256];
+        let n = unsafe { GetClassNameW(hwnd, buf.as_mut_ptr(), buf.len() as i32) };
+        if n <= 0 {
+            return String::new();
+        }
+        String::from_utf16_lossy(&buf[..n as usize])
+    }
+
+    fn process_name(pid: u32) -> String {
+        unsafe {
+            let h = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, 0, pid);
+            if h == 0 {
+                return String::new();
+            }
+            let mut buf = [0u16; 256];
+            let n = GetModuleBaseNameW(h, std::ptr::null(), buf.as_mut_ptr(), buf.len() as u32);
+            CloseHandle(h);
+            if n == 0 {
+                return String::new();
+            }
+            String::from_utf16_lossy(&buf[..n as usize]).to_lowercase()
+        }
+    }
+
+    /// 浏览器进程名白名单：主市占浏览器（chrome/edge/firefox）+ 常见国产
+    fn is_browser_process(name: &str) -> bool {
+        matches!(
+            name,
+            "chrome.exe" | "msedge.exe" | "firefox.exe" | "brave.exe" | "opera.exe"
+                | "vivaldi.exe" | "360se.exe" | "360chrome.exe" | "qqbrowser.exe"
+                | "ucbrowser.exe" | "liebao.exe" | "sogouexplorer.exe" | "2345explorer.exe"
+        )
+    }
+
+    extern "system" fn enum_cb(hwnd: isize, _lparam: *mut c_void) -> i32 {
+        // 只要可见的（最小化窗口也满足 IsWindowVisible）
+        if unsafe { IsWindowVisible(hwnd) } == 0 {
+            return 1;
+        }
+        let class = class_name(hwnd);
+        if class != "Chrome_WidgetWin_1" && class != "MozillaWindowClass" {
+            return 1;
+        }
+        let mut pid = 0u32;
+        unsafe { GetWindowThreadProcessId(hwnd, &mut pid) };
+        if pid == 0 {
+            return 1;
+        }
+        // 排除自己（托盘内嵌 WebView2 也是 Chrome_WidgetWin_1 类）
+        if std::process::id() == pid {
+            return 1;
+        }
+        if !is_browser_process(&process_name(pid)) {
+            return 1;
+        }
+        // 挑窗口面积最大的那个候选（主窗口一般最大），存进 FOUND 由外层前置
+        FOUND.swap(hwnd, Ordering::SeqCst);
+        1
+    }
+
+    /// 遍历所有顶层窗口找浏览器窗口并前置（最小化先恢复）
+    pub fn focus_browser() {
+        FOUND.store(0, Ordering::SeqCst);
+        unsafe { EnumWindows(enum_cb, std::ptr::null_mut()) };
+        let h = FOUND.load(Ordering::SeqCst);
+        if h == 0 {
+            return;
+        }
+        unsafe {
+            if IsIconic(h) != 0 {
+                ShowWindow(h, SW_RESTORE);
+            }
+            SetForegroundWindow(h);
+        }
+    }
+}
+
+#[cfg(not(windows))]
+mod win_focus {
+    pub fn focus_browser() {}
+}
+
+/// 唤起浏览器窗口（Win32 兜底，页面 window.focus 被浏览器拦截时靠它）
+fn focus_browser_window() {
+    win_focus::focus_browser();
 }
 
 /// 拿一个肯定有效的 token：先试保存的，过期（401）就用保存的账号密码重登并写回
@@ -473,18 +666,11 @@ fn poll_once(app: &tauri::AppHandle) {
         .filter_map(|r| r.get("id").map(|v| v.to_string()))
         .collect();
 
+    // 换账号/重启后的首次轮询：不吞通知，正常走下方弹窗链路
+    // （托盘的本职就是用户不开网站也能收到消息；积压未读也要弹，popped 限量防风暴）
     {
-        let baseline = state.baselined_for.lock().unwrap();
-        if baseline.as_deref() != Some(creds.username.as_str()) {
-            drop(baseline);
-            // 首次基线：当前未读全部记为已见，不弹窗
-            let mut baseline = state.baselined_for.lock().unwrap();
-            for id in &id_strs {
-                mark_seen(&state, id);
-            }
-            *baseline = Some(creds.username.clone());
-            return;
-        }
+        let mut baseline = state.baselined_for.lock().unwrap();
+        *baseline = Some(creds.username.clone());
     }
 
     let mut popped = 0;
@@ -506,6 +692,8 @@ fn poll_once(app: &tauri::AppHandle) {
                 "ticketId": row.get("ticketId"),
                 "type": row.get("type"),
                 "comment": row.get("comment").and_then(|c| c.get("content")),
+                "commentAuthor": row.get("comment").and_then(|c| c.get("author"))
+                    .and_then(|a| a.get("realName")),
                 "images": row
                     .get("comment")
                     .and_then(|c| c.get("attachments"))
@@ -759,10 +947,36 @@ fn start_ws_server(app: tauri::AppHandle) {
     });
 }
 
-/// 左键托盘：已开着的页面通知它聚焦，同时一律用默认浏览器打开 TM 系统。
-/// 新开的页面会通过 WS 连上托盘，托盘下发登录态实现免登录（大人 09-04 要求：点击必须开浏览器）
+/// 左键托盘：已有 TM 页面连着（WS peers 非空）→ 广播 focus 唤起已有窗口（不新开 tab）；
+/// 一个页面都没连 → 用默认浏览器打开 TM 系统（新开的页面会通过 WS 连上托盘，托盘下发登录态免登录）
+/// 上次「开浏览器」时刻：冷却期内连点不再重复开 tab。
+/// 场景：首次点击后浏览器要花 1-3 秒才连上 WS（peers 仍为空），
+/// 期间再点会被误判为「没打开过」又开一个 tab。
+static LAST_OPEN: Mutex<Option<Instant>> = Mutex::new(None);
+const OPEN_COOLDOWN: Duration = Duration::from_secs(5);
+
 fn focus_or_open(app: &tauri::AppHandle) {
-    broadcast_ws(app, "{\"type\":\"focus\"}");
+    let state = app.state::<Arc<AppState>>();
+    let has_peers = {
+        let peers = state.peers.lock().unwrap();
+        !peers.is_empty()
+    };
+    if has_peers {
+        broadcast_ws(app, "{\"type\":\"focus\"}");
+        focus_browser_window();
+        return;
+    }
+    {
+        let mut last = LAST_OPEN.lock().unwrap();
+        if let Some(t) = *last {
+            if t.elapsed() < OPEN_COOLDOWN {
+                // 冷却期内：刚开过浏览器，大概率还在启动中，只尝试唤起不再开新 tab
+                focus_browser_window();
+                return;
+            }
+        }
+        *last = Some(Instant::now());
+    }
     if let Some(url) = authed_url("/") {
         open_in_browser(&url);
     }
@@ -808,9 +1022,11 @@ fn show_login_window(app: &tauri::AppHandle) {
 
 // ---------------- 前端命令 ----------------
 
-/// 点通知卡片：用默认浏览器打开对应工单
+/// 点通知卡片：已有 TM 页面连着 → WS 下发 navigate 让页面路由跳转到对应工单（复用 tab）+ 唤起浏览器窗口；
+/// 没有页面 → 用默认浏览器打开工单 URL（新页面 WS 连上后由托盘下发登录态免登录）
+/// 打开/跳转前都先下发托盘登录态对齐页面身份（弹窗轮询是托盘账号，页面账号错配会 404 转圈）
 #[tauri::command]
-fn open_ticket(ticket: serde_json::Value) {
+fn open_ticket(app: tauri::AppHandle, ticket: serde_json::Value) {
     let id = match &ticket {
         serde_json::Value::Number(n) => Some(n.to_string()),
         serde_json::Value::String(s) if !s.trim().is_empty() => Some(s.trim().to_string()),
@@ -820,6 +1036,32 @@ fn open_ticket(ticket: serde_json::Value) {
         Some(id) => format!("/tickets/{id}"),
         None => "/".to_string(),
     };
+    push_auth_to_pages(&app);
+    let state = app.state::<Arc<AppState>>();
+    let has_peers = {
+        let peers = state.peers.lock().unwrap();
+        !peers.is_empty()
+    };
+    if has_peers {
+        let msg = serde_json::json!({
+            "type": "navigate",
+            "path": path,
+        });
+        broadcast_ws(&app, &msg.to_string());
+        focus_browser_window();
+        return;
+    }
+    {
+        // 冷却期内连点不再重复开 tab（浏览器启动中 WS 还没连上，会被误判为没打开过）
+        let mut last = LAST_OPEN.lock().unwrap();
+        if let Some(t) = *last {
+            if t.elapsed() < OPEN_COOLDOWN {
+                focus_browser_window();
+                return;
+            }
+        }
+        *last = Some(Instant::now());
+    }
     if let Some(url) = authed_url(&path) {
         open_in_browser(&url);
     }
@@ -862,6 +1104,22 @@ fn logout(app: tauri::AppHandle) {
     let state = app.state::<Arc<AppState>>();
     *state.baselined_for.lock().unwrap() = None;
     refresh_login_item(&app);
+}
+
+/// 点弹窗打开工单时同步把通知标记已读（根治反复弹：后端 isRead 一直是 false，
+/// 托盘重启后 mark_seen 内存去重清零，整批历史未读又会被轮询拉出来重弹）
+#[tauri::command]
+fn mark_notification_read(id: serde_json::Value) {
+    let Some(id) = id.as_i64() else { return };
+    let Some(creds) = load_credentials() else { return };
+    if creds.token.is_empty() {
+        return;
+    }
+    let Ok(base) = tm_url() else { return };
+    let body = serde_json::json!({ "ids": [id] });
+    let _ = ureq::patch(&format!("{base}/api/notifications/read"))
+        .set("Authorization", &format!("Bearer {}", creds.token))
+        .send_json(body);
 }
 
 // ---------------- 启动 ----------------
@@ -907,6 +1165,10 @@ pub fn run() {
                 .inner_size(NOTIFY_W, NOTIFY_H)
                 .build()?;
             // 空闲时点击穿透，透明画布不遮挡桌面任何操作
+            // 注意：白条防护（子类化/关 NC 渲染）不能在这里立刻做——建窗后 tao
+            // 的窗口过程还在初始化中途，立刻 SetWindowLongPtrW 覆盖会把
+            // tray 事件链弄坏（右键菜单/左键点击失灵，11-26 踩坑）。
+            // 改为前端 notify 页启动时 invoke install_nc_guard（见下方命令）
             if let Some(w) = app.get_webview_window("notify") {
                 let _ = w.set_ignore_cursor_events(true);
             }
@@ -984,12 +1246,14 @@ pub fn run() {
             poll_notify,
             dbg_client,
             configure_tm_url,
+            install_nc_guard,
             set_clip_region,
             open_ticket,
             try_login,
             close_login,
             get_saved_username,
-            logout
+            logout,
+            mark_notification_read
         ])
         .run(tauri::generate_context!())
         .expect("error while running TradeMatrix tray");

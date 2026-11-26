@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html, body { overflow:hidden; }
+  body { font-family:"Segoe UI","Microsoft YaHei",sans-serif; background:#fff; user-select:none; }
+  .wrap { padding:20px 26px; }
+  h2 { font-size:16px; color:#1f2329; margin-bottom:4px; }
+  .sub { font-size:12px; color:#86909c; margin-bottom:14px; line-height:1.5; }
+  label { display:block; font-size:12px; color:#4e5969; margin:10px 0 5px; }
+  input {
+    width:100%; height:32px; padding:0 10px; font-size:13px;
+    border:1px solid #e5e6eb; border-radius:6px; outline:none;
+  }
+  input:focus { border-color:#165dff; }
+  .btn {
+    width:100%; height:34px; margin-top:16px; border:none; border-radius:6px;
+    background:#165dff; color:#fff; font-size:13px; cursor:pointer;
+  }
+  .btn:hover { opacity:.88; }
+  .btn:disabled { opacity:.55; cursor:not-allowed; }
+  .btn-ghost {
+    width:100%; height:30px; margin-top:8px; border:1px solid #e5e6eb; border-radius:6px;
+    background:#fff; color:#86909c; font-size:12px; cursor:pointer; display:none;
+  }
+  .btn-ghost:hover { color:#f53f3f; border-color:#f53f3f; }
+  .msg { font-size:12px; margin-top:8px; min-height:16px; }
+  .err { color:#f53f3f; }
+  .ok { color:#00b42a; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h2>TradeMatrix 账号登录</h2>
+  <div class="sub">登录后托盘可直接接收你的未读工单通知，账号密码加密仅存本机。</div>
+  <label>账号</label>
+  <input id="username" autocomplete="off">
+  <label>密码</label>
+  <input id="password" type="password">
+  <button class="btn" id="btn">登 录</button>
+  <button class="btn-ghost" id="logout">退出登录（清除本机保存的账号）</button>
+  <div class="msg" id="msg"></div>
+</div>
+<script>
+  const invoke = (cmd, args) => window.__TAURI_INTERNALS__.invoke(cmd, args);
+  const msg = document.getElementById("msg");
+  const btn = document.getElementById("btn");
+  const logoutBtn = document.getElementById("logout");
+
+  function refreshLogout() {
+    invoke("get_saved_username").then((u) => {
+      logoutBtn.style.display = u ? "block" : "none";
+      if (u) document.getElementById("username").value = u;
+    }).catch(() => {});
+  }
+  refreshLogout();
+
+  document.getElementById("password").addEventListener("keydown", (e) => {
+    if (e.key === "Enter") btn.click();
+  });
+
+  btn.addEventListener("click", async () => {
+    const username = document.getElementById("username").value.trim();
+    const password = document.getElementById("password").value;
+    if (!username || !password) {
+      msg.className = "msg err";
+      msg.textContent = "请输入账号和密码";
+      return;
+    }
+    btn.disabled = true;
+    msg.className = "msg";
+    msg.textContent = "登录中...";
+    try {
+      await invoke("try_login", { username, password });
+      msg.className = "msg ok";
+      msg.textContent = "登录成功，托盘已就绪";
+      refreshLogout();
+      setTimeout(() => invoke("close_login"), 600);
+    } catch (e) {
+      msg.className = "msg err";
+      msg.textContent = typeof e === "string" ? e : "登录失败，请检查网络";
+      btn.disabled = false;
+    }
+  });
+
+  logoutBtn.addEventListener("click", async () => {
+    await invoke("logout");
+    document.getElementById("password").value = "";
+    msg.className = "msg ok";
+    msg.textContent = "已退出登录，本机账号已清除";
+    refreshLogout();
+  });
+</script>
+</body>
+</html>
