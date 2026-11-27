@@ -1,8 +1,9 @@
 import { defineStore } from "pinia";
 import { ref } from "vue";
+import { ElMessage } from "element-plus";
 import router from "../router";
 import * as notificationApi from "../api/notifications";
-import { isTrayConnected } from "../utils/traySocket";
+import { isTrayConnected, setTrayGoneHandler } from "../utils/traySocket";
 
 export const useNotificationStore = defineStore("notification", () => {
   const unreadCount = ref(0);
@@ -91,6 +92,34 @@ export const useNotificationStore = defineStore("notification", () => {
     if ("Notification" in window && Notification.permission === "default") {
       Notification.requestPermission();
     }
+  }
+
+  // 托盘断开兜底（大人 11-27 要求）：原生通知分支要能真正弹出来。
+  // 权限 default → 弹一次授权框；denied → 页面消息引导用户去浏览器站点设置开启
+  function ensureNativeNotificationReady() {
+    if (!("Notification" in window)) return;
+    if (Notification.permission === "default") {
+      Notification.requestPermission().then((p) => {
+        if (p === "denied") showDeniedHint();
+      });
+    } else if (Notification.permission === "denied") {
+      showDeniedHint();
+    }
+  }
+
+  function showDeniedHint() {
+    ElMessage({
+      type: "warning",
+      duration: 6000,
+      message: "托盘已退出，浏览器通知权限被拒收不到提醒：点击地址栏左侧图标 → 网站设置 → 通知 → 允许",
+    });
+  }
+
+  // 注册托盘断开回调（只注册一次）
+  let handlerRegistered = false;
+  if (!handlerRegistered) {
+    handlerRegistered = true;
+    setTrayGoneHandler(ensureNativeNotificationReady);
   }
 
   function startPolling() {

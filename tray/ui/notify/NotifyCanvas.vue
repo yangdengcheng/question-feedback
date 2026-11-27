@@ -108,7 +108,8 @@ function doShow(payload) {
   handle = ElNotification({
     title: "TradeMatrix通知",
     message: buildMessage(payload),
-    duration: 0, // 不自动关闭，只能点右上角叉叉或点卡片手动关（大人 09-04 要求）
+    // 工单通知不自动关（大人 09-04 要求）；带 duration 的系统提示按毫秒自动关（如自启切换提醒 3 秒）
+    duration: typeof payload.duration === "number" ? payload.duration : 0,
     offset: 16,
     position: "top-right",
     onClick: () => {

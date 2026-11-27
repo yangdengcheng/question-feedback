@@ -220,6 +220,12 @@ fn config_dir() -> Option<std::path::PathBuf> {
     Some(dir)
 }
 
+/// 数据目录路径（不创建）：清除数据场景用，避免清完又顺手把目录建回来
+fn data_dir_no_create() -> Option<std::path::PathBuf> {
+    let appdata = std::env::var("APPDATA").ok()?;
+    Some(std::path::PathBuf::from(appdata).join("TradeMatrixTray"))
+}
+
 fn auth_file() -> Option<std::path::PathBuf> {
     Some(config_dir()?.join("auth.bin"))
 }
@@ -241,6 +247,119 @@ fn load_credentials() -> Option<Credentials> {
 fn clear_credentials() {
     if let Some(path) = auth_file() {
         let _ = std::fs::remove_file(path);
+    }
+}
+
+// ---------------- 多账号存储（记住密码/自动登录） ----------------
+
+/// 留存的账号条目：密码明文经 DPAPI 整体加密后落盘
+#[derive(Serialize, Deserialize, Clone)]
+struct AccountEntry {
+    username: String,
+    password: String,
+    #[serde(default)]
+    auto_login: bool,
+}
+
+fn accounts_file() -> Option<std::path::PathBuf> {
+    Some(config_dir()?.join("accounts.bin"))
+}
+
+fn load_accounts() -> Vec<AccountEntry> {
+    let Some(path) = accounts_file() else { return Vec::new() };
+    let Ok(blob) = std::fs::read(path) else { return Vec::new() };
+    let Some(json) = dpapi(&blob, false) else { return Vec::new() };
+    serde_json::from_slice(&json).unwrap_or_default()
+}
+
+fn save_accounts(list: &[AccountEntry]) -> Result<(), String> {
+    let json = serde_json::to_vec(list).map_err(|e| e.to_string())?;
+    let blob = dpapi(&json, true).ok_or_else(|| "DPAPI 加密失败".to_string())?;
+    let path = accounts_file().ok_or_else(|| "无法定位配置目录".to_string())?;
+    std::fs::write(path, blob).map_err(|e| e.to_string())
+}
+
+/// 保证自动登录互斥：只留 username 指定的那个勾选，其余全部清掉
+/// （save_username=None 时全清——编辑气泡里取消勾选的场景）
+fn set_auto_login(list: &mut [AccountEntry], username: Option<&str>) {
+    for a in list.iter_mut() {
+        a.auto_login = username.map(|u| a.username == u).unwrap_or(false);
+    }
+}
+
+/// 列出留存账号（前端快速登录/编辑用）。password 一并返回——
+/// 数据整体 DPAPI 加密落盘，只有本机当前 Windows 账号能解，展示给本人无风险。
+#[tauri::command]
+fn list_accounts() -> Vec<serde_json::Value> {
+    load_accounts()
+        .into_iter()
+        .map(|a| {
+            serde_json::json!({
+                "username": a.username,
+                "password": a.password,
+                "autoLogin": a.auto_login,
+            })
+        })
+        .collect()
+}
+
+/// 新增/更新一个留存账号（登录时勾了「记住密码」调用）。
+/// auto_login=true 时自动取消其他账号的勾选（互斥）。
+#[tauri::command]
+fn upsert_account(username: String, password: String, auto_login: bool) -> Result<(), String> {
+    let mut list = load_accounts();
+    list.retain(|a| a.username != username);
+    list.push(AccountEntry { username, password, auto_login: false });
+    if auto_login {
+        let name = list.last().unwrap().username.clone();
+        set_auto_login(&mut list, Some(&name));
+    }
+    save_accounts(&list)
+}
+
+/// 编辑气泡保存：更新账号密码 + 重设自动登录勾选（互斥逻辑在 set_auto_login）
+#[tauri::command]
+fn update_account(username: String, password: String, auto_login: bool) -> Result<(), String> {
+    let mut list = load_accounts();
+    let target = list.iter_mut().find(|a| a.username == username);
+    match target {
+        Some(a) => {
+            a.password = password;
+        }
+        None => {
+            list.push(AccountEntry { username: username.clone(), password, auto_login: false });
+        }
+    }
+    set_auto_login(&mut list, if auto_login { Some(username.as_str()) } else { None });
+    save_accounts(&list)
+}
+
+/// 删除一个留存账号（编辑气泡里删账号按钮用，暂未在前端暴露）
+#[tauri::command]
+fn remove_account(username: String) -> Result<(), String> {
+    let mut list = load_accounts();
+    list.retain(|a| a.username != username);
+    save_accounts(&list)
+}
+
+/// 启动时自动登录：找 auto_login 的账号静默登录（凭据错/网络失败不弹窗，静默保持未登录）
+fn try_auto_login(app: &tauri::AppHandle) {
+    let accounts = load_accounts();
+    let Some(acc) = accounts.into_iter().find(|a| a.auto_login) else { return };
+    match api_login(&acc.username, &acc.password) {
+        Ok((token, user)) => {
+            let _ = save_credentials(&Credentials {
+                username: acc.username,
+                password: acc.password,
+                token,
+                user,
+            });
+            let state = app.state::<Arc<AppState>>();
+            *state.baselined_for.lock().unwrap() = None;
+            refresh_login_item(app);
+            poll_once(app);
+        }
+        Err(_) => {}
     }
 }
 
@@ -1117,7 +1236,7 @@ fn show_login_window(app: &tauri::AppHandle) {
     }
     let _ = WebviewWindowBuilder::new(app, "login", WebviewUrl::App("login.html".into()))
         .title("TradeMatrix 账号登录")
-        .inner_size(380.0, 400.0)
+        .inner_size(400.0, 340.0)
         .resizable(false)
         .maximizable(false)
         .center()
@@ -1172,15 +1291,25 @@ fn open_ticket(app: tauri::AppHandle, ticket: serde_json::Value) {
 }
 
 /// 登录窗口提交：验证账号密码并加密保存
+/// remember=true → 账号留存到快速登录列表；auto_login=true → 设为自动登录账号（互斥）
 #[tauri::command]
-fn try_login(app: tauri::AppHandle, username: String, password: String) -> Result<(), String> {
+fn try_login(
+    app: tauri::AppHandle,
+    username: String,
+    password: String,
+    remember: bool,
+    auto_login: bool,
+) -> Result<(), String> {
     let (token, user) = api_login(&username, &password)?;
     save_credentials(&Credentials {
-        username,
-        password,
+        username: username.clone(),
+        password: password.clone(),
         token,
         user,
     })?;
+    if remember {
+        let _ = upsert_account(username, password, auto_login);
+    }
     let state = app.state::<Arc<AppState>>();
     *state.baselined_for.lock().unwrap() = None; // 下次轮询先建基线
     refresh_login_item(&app);
@@ -1199,6 +1328,15 @@ fn close_login(app: tauri::AppHandle) {
 #[tauri::command]
 fn get_saved_username() -> Option<String> {
     load_credentials().map(|c| c.username)
+}
+
+/// 登录窗「打开数据文件夹」：资源管理器打开 %APPDATA%\TradeMatrixTray\
+/// 目录不存在时先创建（用户可能刚清除过数据又想看看）
+#[tauri::command]
+fn open_data_dir() {
+    if let Some(dir) = config_dir() {
+        let _ = open::that(dir.as_os_str());
+    }
 }
 
 /// 清除本机保存的账号
@@ -1280,14 +1418,15 @@ pub fn run() {
             start_http_server(app.handle().clone());
             start_ws_server(app.handle().clone());
             start_poller(app.handle().clone());
+            try_auto_login(app.handle());
 
-            // 托盘菜单
+            // 托盘菜单（test_notify 功能保留但菜单项隐藏——测试阶段结束，将来要测再挂回来）
             let login_item = MenuItemBuilder::with_id("login", "账号登录...").build(app)?;
             let autostart_item = MenuItemBuilder::with_id("autostart", "开机自启").build(app)?;
-            let test_item = MenuItemBuilder::with_id("test_notify", "测试阶段：弹一条测试通知").build(app)?;
+            let wipe_item = MenuItemBuilder::with_id("wipe_data", "清除账号数据").build(app)?;
             let quit_item = MenuItemBuilder::with_id("quit", "退出").build(app)?;
             let menu = MenuBuilder::new(app)
-                .items(&[&login_item, &autostart_item, &test_item, &quit_item])
+                .items(&[&login_item, &autostart_item, &wipe_item, &quit_item])
                 .build()?;
 
             {
@@ -1314,6 +1453,25 @@ pub fn run() {
                             let _ = launcher.enable();
                         }
                         refresh_autostart_item(app);
+                        // 切换后弹通知告知当前状态（duration 3000 = 3 秒自动关闭）
+                        let now = launcher.is_enabled().unwrap_or(false);
+                        let seq = std::time::SystemTime::now()
+                            .duration_since(std::time::UNIX_EPOCH)
+                            .map(|d| d.as_millis())
+                            .unwrap_or(0);
+                        queue_notify(
+                            app,
+                            serde_json::json!({
+                                "id": format!("autostart-{seq}"),
+                                "content": if now {
+                                    "已开启开机自启：电脑开机后托盘将自动运行"
+                                } else {
+                                    "已关闭开机自启"
+                                },
+                                "ticketId": null,
+                                "duration": 3000,
+                            }),
+                        );
                     }
                     "test_notify" => {
                         let seq = std::time::SystemTime::now()
@@ -1325,6 +1483,35 @@ pub fn run() {
                             serde_json::json!({
                                 "id": format!("test-{seq}"),
                                 "content": "这是一条测试通知（托盘右键菜单触发）",
+                                "ticketId": null,
+                            }),
+                        );
+                    }
+                    "wipe_data" => {
+                        // 清除账号数据：删除 %APPDATA%\TradeMatrixTray\ 整个目录
+                        // （auth.bin 账号密码 + config.json 配置），回到从未使用过的状态。
+                        // 先清内存登录态（含基线账号、通知去重记录），再删目录，
+                        // 最后弹出一条确认通知告知用户已恢复初始状态。
+                        let state = app.state::<Arc<AppState>>();
+                        clear_credentials();
+                        *state.baselined_for.lock().unwrap() = None;
+                        state.seen.lock().unwrap().clear();
+                        state.pending.lock().unwrap().clear();
+                        refresh_login_item(app);
+                        if let Some(dir) = data_dir_no_create() {
+                            if dir.exists() {
+                                let _ = std::fs::remove_dir_all(&dir);
+                            }
+                        }
+                        let seq = std::time::SystemTime::now()
+                            .duration_since(std::time::UNIX_EPOCH)
+                            .map(|d| d.as_millis())
+                            .unwrap_or(0);
+                        queue_notify(
+                            app,
+                            serde_json::json!({
+                                "id": format!("wipe-{seq}"),
+                                "content": "账号数据已清除（登录信息与本地配置已删除），回到未使用状态",
                                 "ticketId": null,
                             }),
                         );
@@ -1357,7 +1544,12 @@ pub fn run() {
             close_login,
             get_saved_username,
             logout,
-            mark_notification_read
+            mark_notification_read,
+            open_data_dir,
+            list_accounts,
+            upsert_account,
+            update_account,
+            remove_account
         ])
         .run(tauri::generate_context!())
         .expect("error while running TradeMatrix tray");
